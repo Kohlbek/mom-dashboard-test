@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mom's TV</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 35px 20px;
+    background: white;
+}
+h1 {
+    font-size: 42px;
+    margin-bottom: 30px;
+}
+button {
+    font-size: 36px;
+    font-weight: bold;
+    width: 90%;
+    max-width: 650px;
+    min-height: 130px;
+    margin: 15px;
+    border-radius: 22px;
+}
+button:disabled {
+    opacity: .5;
+}
+#status {
+    font-size: 27px;
+    margin-top: 25px;
+}
+</style>
+</head>
+<body>
+<h1>What would you like to watch?</h1>
+<button id="loneRanger">🤠 WATCH THE<br>LONE RANGER</button>
+<br>
+<button id="carson">🎙️ WATCH<br>JOHNNY CARSON</button>
+<p id="status">Ready</p>
+<script>
+const roku = "http://192.168.0.210:8060";
+const status = document.getElementById("status");
+const loneButton = document.getElementById("loneRanger");
+const carsonButton = document.getElementById("carson");
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function key(name, delay = 700) {
+    await fetch(`${roku}/keypress/${name}`, {
+        method: "POST",
+        mode: "no-cors"
+    });
+    await wait(delay);
+}
+
+async function typeText(text) {
+    for (const character of text) {
+        const encoded = encodeURIComponent(character);
+        await fetch(`${roku}/keypress/Lit_${encoded}`, {
+            method: "POST",
+            mode: "no-cors"
+        });
+        await wait(150);
+    }
+}
+
+function buttons(enabled) {
+    loneButton.disabled = !enabled;
+    carsonButton.disabled = !enabled;
+}
+
+async function openSearch() {
+    await key("PowerOn");
+    await wait(5000);
+    await key("Home");
+    await wait(2000);
+    await key("Left");
+    for (let i = 0; i < 5; i++) {
+        await key("Down");
+    }
+    await key("Right");
+    await wait(2000);
+}
+
+async function sixRights() {
+    for (let i = 0; i < 6; i++) {
+        await key("Right");
+    }
+}
+
+async function playLoneRanger() {
+    buttons(false);
+    status.textContent = "Starting The Lone Ranger…";
+    try {
+        await openSearch();
+        await typeText("The Lone Ranger");
+        await wait(3000);
+        await sixRights();
+        await key("Select");
+        await wait(7000);
+        await key("Select");
+        status.textContent = "Enjoy The Lone Ranger! 🤠";
+    } catch (error) {
+        status.textContent = "TV didn't respond. Please try again.";
+    } finally {
+        buttons(true);
+    }
+}
+
+async function playCarson() {
+    buttons(false);
+    status.textContent = "Starting Johnny Carson…";
+    try {
+        await openSearch();
+        await typeText("Johnny Carson");
+        await wait(3000);
+        await sixRights();
+        await key("Down");
+        await key("Right");
+        await key("Select");
+        await wait(7000);
+        await key("Select");
+        status.textContent = "Enjoy Johnny Carson! 🎙️";
+    } catch (error) {
+        status.textContent = "TV didn't respond. Please try again.";
+    } finally {
+        buttons(true);
+    }
+}
+
+loneButton.addEventListener("click", playLoneRanger);
+carsonButton.addEventListener("click", playCarson);
+</script>
+</body>
+</html>
