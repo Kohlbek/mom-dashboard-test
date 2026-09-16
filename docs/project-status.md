@@ -2,16 +2,18 @@
 
 _Last updated: September 15, 2026_
 
-## Status: Prototype 1 Working
+## Status: Prototype 1 Working — Basic Windows Reliability Hardened
 
-The first end-to-end Mom Dashboard prototype is operational.
+The first end-to-end Mom Dashboard prototype is operational, and the initial Windows-host reliability phase has passed.
 
-From the Fire tablet, one button can now turn on/control the Roku TV, find the intended program, choose the correct Roku result/provider, and begin playback.
+From the Fire tablet, one button can turn on/control the Roku TV, find the intended program, choose the correct Roku result/provider, and begin playback.
 
 Both initial program buttons have passed end-to-end testing:
 
 - **The Lone Ranger — PASS**
 - **Johnny Carson — PASS**
+
+The bridge has also now passed automatic-start, closed-lid, and extended unattended-idle testing while the Acer laptop is plugged in.
 
 ## What has been proven
 
@@ -43,6 +45,24 @@ This is an important project result because it demonstrates **task elimination/r
 Fire tablet -> dashboard -> Windows bridge -> Roku -> playback
 ```
 
+### Windows bridge reliability hardening
+The current Acer bridge host has now been configured and tested for unattended operation while plugged in.
+
+- Windows Scheduled Task created: `Mom Dashboard Roku Bridge`.
+- The task successfully launches `roku-bridge.ps1` at Windows logon.
+- The bridge responded successfully at `/test` when launched by the scheduled task.
+- After a Windows restart, the bridge came back automatically without manually launching PowerShell.
+- AC sleep timeout changed from 15 minutes to **Never**.
+- AC hibernate timeout changed from approximately 12 hours to **Never**.
+- Battery sleep/hibernate behavior was intentionally left unchanged.
+- Acer's hidden `Lid close action` setting was exposed and identified as the cause of the bridge stopping when the lid was closed.
+- AC lid-close action changed from **Sleep** to **Do nothing**.
+- Battery lid-close action remains **Sleep**.
+- With the laptop plugged in and lid closed, The Lone Ranger launched successfully from the Fire tablet.
+- After more than one hour plugged in, lid closed, and untouched, the Fire-tablet control still worked successfully.
+
+**Result:** basic Windows-host unattended reliability is now considered passed for Prototype 1.
+
 ### GitHub / version control
 - Repository established: `Kohlbek/mom-dashboard-test`
 - GitHub Pages deployment was successfully tested.
@@ -67,37 +87,32 @@ PowerShell's `HttpListener` initially failed with `Access is denied`. The bridge
 ### Roku unreachable on network
 During bridge testing, requests reached the bridge but the bridge reported `Unable to connect to the remote server`.
 
-Direct testing showed:
+Direct testing showed the Roku temporarily unreachable. Earlier testing also found a Wi-Fi band/network-path issue; after correcting connectivity, ECP worked again.
 
-```text
-Invoke-WebRequest http://192.168.0.210:8060/query/device-info
-```
+During the September 15 reboot reliability test, the bridge itself restarted successfully but the first Fire-tablet attempt reported `TV didn't respond`. The Roku still showed IP `192.168.0.210` and the expected Wi-Fi band. ARP resolved `.210` to MAC `68-c8-c0-59-ea-21`, and a subsequent TCP test to Roku ECP port 8060 succeeded. A second Johnny Carson attempt then worked without further intervention.
 
-failed, and ping returned `Destination host unreachable`.
+**Current interpretation:** preserve this as a startup/network reconnection timing observation rather than changing the known-good bridge. The system recovered on its own.
 
-The Roku was found to be on a different Wi-Fi band/network path. After correcting its Wi-Fi connection:
-- Roku ECP returned HTTP 200.
-- Ping succeeded with roughly 8–13 ms latency.
-- Both Fire-tablet dashboard buttons worked end-to-end.
-
-This is the first concrete reliability issue to preserve for later architecture decisions.
+### Laptop lid behavior
+The Acer power plan initially did not display the lid-close setting in the normal power query. The hidden setting was exposed and showed AC and battery lid-close behavior were both set to Sleep. Changing only the AC lid-close action to Do nothing allowed the bridge to continue operating with the lid closed.
 
 ## Current Prototype Dependencies
 
 The working TV prototype currently depends on:
 
 1. Fire tablet being connected to Mom's home network.
-2. Windows bridge computer being powered on, awake, and connected to the network.
-3. `roku-bridge.ps1` running.
-4. Roku TV being reachable at its reserved IP address.
-5. Roku ECP / mobile-app control being enabled.
-6. Roku Search/results layout remaining compatible with the tested navigation sequence.
+2. Windows bridge computer being powered on, plugged in, and connected to the network.
+3. Windows user logon occurring so the current scheduled-task trigger can launch the bridge.
+4. `roku-bridge.ps1` running through the scheduled task.
+5. Roku TV being reachable at its reserved IP address.
+6. Roku ECP / mobile-app control being enabled.
+7. Roku Search/results layout remaining compatible with the tested navigation sequence.
 
 ## Current Risk / Fragility
 
 ### High priority
-- **Windows computer dependency:** bridge disappears if laptop sleeps, restarts, disconnects, or script stops.
-- **Network segmentation/band behavior:** Roku became unreachable while apparently connected to Wi-Fi.
+- **Network reconnection/startup timing:** immediately after one Windows reboot, the bridge was up before the Roku path was ready; the first request failed and a later request succeeded automatically.
+- **Windows laptop dependency:** reliability is substantially improved, but the prototype still depends on a consumer laptop, Windows logon, power, and Wi-Fi.
 
 ### Medium priority
 - **Roku UI navigation dependency:** scripts currently rely on deterministic UI navigation. Roku search-result changes could break sequences.
@@ -108,24 +123,26 @@ The working TV prototype currently depends on:
 - Additional entertainment choices.
 - More sophisticated error messages.
 
-## Recommended next phase: Reliability before expansion
+## Reliability Phase — Completed and Remaining
 
-Do not immediately add many new dashboard features.
+Completed September 15, 2026:
 
-First turn the successful two-button prototype into a dependable appliance-like system.
+1. Preserve the working two-button prototype.
+2. Make bridge startup automatic at Windows logon.
+3. Prevent AC sleep and hibernation.
+4. Keep bridge running with the laptop lid closed while plugged in.
+5. Verify scheduled-task bridge startup after Windows restart.
+6. Verify closed-lid Fire-tablet control.
+7. Verify more than one hour of unattended closed-lid operation.
 
-Priority work:
+Remaining reliability experiments worth doing before production deployment:
 
-1. Preserve/back up the currently working scripts.
-2. Make bridge startup automatic.
-3. Prevent the bridge host from sleeping when Mom needs it.
-4. Test recovery after Windows restart.
-5. Test recovery after Roku restart/power interruption.
-6. Test tablet reconnect after Wi-Fi interruption.
-7. Determine why the Roku Wi-Fi-band change caused loss of reachability.
-8. Decide whether to replace the Windows laptop with a small always-on local controller.
-9. Add simple success/failure feedback and possibly retry logic.
-10. Only after reliability is acceptable, expand to other dashboard functions.
+1. Test recovery after Roku restart/power interruption.
+2. Test tablet reconnect after Wi-Fi interruption.
+3. Revisit network/band behavior if the Roku becomes unreachable again.
+4. Consider simple retry logic for the brief post-reboot Roku/network readiness window.
+5. Eventually decide whether to replace the Windows laptop with a small always-on local controller.
+6. Add simple success/failure feedback only when it provides practical value.
 
 ## Broader Aging Parent Support Project
 
@@ -177,4 +194,14 @@ A particularly useful project metric is **time converted**: support/troubleshoot
 - The Lone Ranger one-touch playback passed.
 - Johnny Carson one-touch playback passed.
 
-**Current milestone:** Freeze and preserve Prototype 1, then begin reliability hardening.
+**September 15, 2026 — Prototype 1 Reliability Baseline:**
+- Bridge automatic startup at Windows logon proven.
+- Bridge recovery after Windows restart proven.
+- AC sleep disabled.
+- AC hibernation disabled.
+- AC lid-close action changed to Do nothing; battery behavior retained.
+- Closed-lid dashboard operation proven.
+- More-than-one-hour unattended closed-lid operation proven.
+- Brief post-reboot Roku/network readiness delay observed; system recovered without intervention.
+
+**Current milestone:** Prototype 1 known-good baseline frozen with basic Windows-host reliability hardening complete. Continue targeted reliability experiments or begin the next Mom Dashboard capability without casually changing the proven Roku navigation sequences.
