@@ -2,9 +2,9 @@
 
 _Last updated: September 15, 2026_
 
-## Status: Prototype 1 Working — Basic Windows Reliability Hardened
+## Status: Prototype 1 Working — Basic Windows Reliability Hardened; Dashboard Capability Expansion Begun
 
-The first end-to-end Mom Dashboard prototype is operational, and the initial Windows-host reliability phase has passed.
+The first end-to-end Mom Dashboard prototype is operational. The initial Windows-host reliability phase has passed, and the dashboard has now begun expanding beyond TV control.
 
 From the Fire tablet, one button can turn on/control the Roku TV, find the intended program, choose the correct Roku result/provider, and begin playback.
 
@@ -13,7 +13,9 @@ Both initial program buttons have passed end-to-end testing:
 - **The Lone Ranger — PASS**
 - **Johnny Carson — PASS**
 
-The bridge has also now passed automatic-start, closed-lid, and extended unattended-idle testing while the Acer laptop is plugged in.
+The bridge has also passed automatic-start, closed-lid, and extended unattended-idle testing while the Acer laptop is plugged in.
+
+On September 15, the dashboard was expanded with a dynamic greeting/date, weather information, and a Family Updates page. The first real family update was successfully displayed.
 
 ## What has been proven
 
@@ -36,17 +38,33 @@ This is an important project result because it demonstrates **task elimination/r
 - The tablet can present a much simpler UI than the Roku remote.
 - Large, single-purpose controls are practical.
 - Mom does not need the Roku mobile app installed on the Fire tablet.
+- Dashboard now automatically displays a time-appropriate greeting: Good morning / Good afternoon / Good evening, Mom.
+- Dashboard automatically displays the current date.
+- Weather information is now displayed for Omaha, NE; Yardley, PA; and Nashville, TN, including current temperature, condition, high, and low.
+- Weather degree-symbol encoding was corrected during testing.
+- A large Family Updates button and dedicated Family Updates page have been added.
+
+### Family Updates — first content test
+The Family Updates capability has passed its first manual content test.
+
+- Dedicated page includes family-member cards and a large Back to Home control.
+- Grandson label was personalized to **Danny**.
+- First real update displayed successfully: **Danny went back to college.**
+- Dashboard/bridge was restarted through the existing Windows Scheduled Task without rebooting the computer, and the update appeared correctly on the Fire tablet.
+
+**Current interpretation:** the presentation layer works. The next useful experiment is to separate family-update content from `roku-bridge.ps1`, so routine content changes do not require editing the working dashboard/Roku code. This creates a foundation for a later Human + AI workflow in which a family update can be provided to ChatGPT and propagated to Mom's dashboard with minimal caregiver effort.
 
 ### Local bridge
 - A PowerShell HTTP bridge running on a Windows computer successfully accepts commands from the Fire tablet and translates them into Roku ECP actions.
-- End-to-end path is working:
+- The bridge also serves the current Mom Dashboard interface.
+- End-to-end TV path is working:
 
 ```text
 Fire tablet -> dashboard -> Windows bridge -> Roku -> playback
 ```
 
 ### Windows bridge reliability hardening
-The current Acer bridge host has now been configured and tested for unattended operation while plugged in.
+The current Acer bridge host has been configured and tested for unattended operation while plugged in.
 
 - Windows Scheduled Task created: `Mom Dashboard Roku Bridge`.
 - The task successfully launches `roku-bridge.ps1` at Windows logon.
@@ -61,12 +79,17 @@ The current Acer bridge host has now been configured and tested for unattended o
 - With the laptop plugged in and lid closed, The Lone Ranger launched successfully from the Fire tablet.
 - After more than one hour plugged in, lid closed, and untouched, the Fire-tablet control still worked successfully.
 
-**Result:** basic Windows-host unattended reliability is now considered passed for Prototype 1.
+**Result:** basic Windows-host unattended reliability is considered passed for Prototype 1.
+
+### Prototype preservation / restart workflow
+- A frozen local backup of the known-good bridge was created as `roku-bridge-PROTOTYPE1.ps1` before capability expansion.
+- `Test-Path` confirmed the backup exists.
+- Dashboard changes can be activated without a Windows reboot by stopping and restarting the `Mom Dashboard Roku Bridge` Scheduled Task.
 
 ### GitHub / version control
 - Repository established: `Kohlbek/mom-dashboard-test`
 - GitHub Pages deployment was successfully tested.
-- GitHub is now being used to preserve project code and documentation.
+- GitHub is being used to preserve project documentation.
 
 ## Problems encountered and what they taught us
 
@@ -77,9 +100,7 @@ Initial Alexa/Roku work did not provide the desired direct, reliable experience.
 The Amazon Appstore does not provide the official Roku app, so the project moved toward a browser-based interface.
 
 ### GitHub Pages to Roku
-The public HTTPS dashboard could load on the tablet, but direct browser-to-local-Roku control was not a reliable architecture because of browser security boundaries between HTTPS/public pages and HTTP/private-network endpoints.
-
-Result: introduce a local bridge.
+The public HTTPS dashboard was tested earlier. The current working prototype serves the dashboard through the local Windows bridge, which also performs Roku control.
 
 ### Windows HTTP listener permissions
 PowerShell's `HttpListener` initially failed with `Access is denied`. The bridge was subsequently run successfully and began receiving tablet requests.
@@ -96,9 +117,12 @@ During the September 15 reboot reliability test, the bridge itself restarted suc
 ### Laptop lid behavior
 The Acer power plan initially did not display the lid-close setting in the normal power query. The hidden setting was exposed and showed AC and battery lid-close behavior were both set to Sleep. Changing only the AC lid-close action to Do nothing allowed the bridge to continue operating with the lid closed.
 
+### Character encoding during dashboard expansion
+Early dashboard edits produced malformed emoji/degree characters. HTML entities and subsequent corrections produced proper Fire-tablet display. This is a minor implementation lesson for future dashboard content.
+
 ## Current Prototype Dependencies
 
-The working TV prototype currently depends on:
+The working prototype currently depends on:
 
 1. Fire tablet being connected to Mom's home network.
 2. Windows bridge computer being powered on, plugged in, and connected to the network.
@@ -107,6 +131,7 @@ The working TV prototype currently depends on:
 5. Roku TV being reachable at its reserved IP address.
 6. Roku ECP / mobile-app control being enabled.
 7. Roku Search/results layout remaining compatible with the tested navigation sequence.
+8. Any external data source used by the weather implementation remaining reachable.
 
 ## Current Risk / Fragility
 
@@ -117,6 +142,7 @@ The working TV prototype currently depends on:
 ### Medium priority
 - **Roku UI navigation dependency:** scripts currently rely on deterministic UI navigation. Roku search-result changes could break sequences.
 - **Local IP assumptions:** DHCP reservations reduce but do not eliminate network configuration risks.
+- **Content maintenance:** Family Updates are currently hard-coded into the bridge/dashboard and therefore still require a code edit plus bridge restart.
 
 ### Lower priority for prototype
 - Dashboard aesthetics and polish.
@@ -144,21 +170,43 @@ Remaining reliability experiments worth doing before production deployment:
 5. Eventually decide whether to replace the Windows laptop with a small always-on local controller.
 6. Add simple success/failure feedback only when it provides practical value.
 
+## Capability Expansion — Begun September 15, 2026
+
+The project has moved beyond the original two-button entertainment proof of concept while preserving its working Roku sequences.
+
+Completed initial capability tests:
+
+1. **Contextual greeting:** automatic morning/afternoon/evening greeting addressed to Mom.
+2. **Date:** automatic current date on the home screen.
+3. **Weather:** dashboard weather cards successfully displayed for Omaha, Yardley, and Nashville.
+4. **Family Updates UI:** dedicated page accessible from the home dashboard.
+5. **Family Updates content:** first real update successfully displayed for Danny.
+
+Recommended next Family Updates experiment:
+
+- Move update content into a small separate data file rather than embedding it in `roku-bridge.ps1`.
+- Keep the proven Roku/navigation code isolated from routine family-content changes.
+- After that works, test a lower-friction update workflow such as: family/caregiver provides update -> AI organizes/simplifies -> dashboard data changes -> Mom sees update.
+- Initially retain human approval before family information is published to Mom's dashboard.
+
+Smart-light testing remains queued for when the bulbs arrive.
+
 ## Broader Aging Parent Support Project
 
-The TV dashboard is one experiment inside a larger Human + AI aging-parent support project.
+The dashboard is one experiment inside a larger Human + AI aging-parent support project.
 
-Potential future modules include:
+Potential modules include:
 - Daily `MOM — TODAY` printed sheet
-- One-touch entertainment
-- Family updates/photos
+- One-touch entertainment — **prototype working**
+- Family updates/photos — **initial text capability working**
+- Weather/contextual daily information — **initial dashboard capability working**
 - Simplified current-news summaries
 - Calendar/appointment reminders
 - Emergency/medical information binder
 - Household inventory reminders
 - Shopping assistance
 - Bills/admin support for caregiver
-- Smart-light routines
+- Smart-light routines — **hardware pending**
 - Front-door camera access
 - Coffee routine with appropriate safety constraints
 
@@ -204,4 +252,15 @@ A particularly useful project metric is **time converted**: support/troubleshoot
 - More-than-one-hour unattended closed-lid operation proven.
 - Brief post-reboot Roku/network readiness delay observed; system recovered without intervention.
 
-**Current milestone:** Prototype 1 known-good baseline frozen with basic Windows-host reliability hardening complete. Continue targeted reliability experiments or begin the next Mom Dashboard capability without casually changing the proven Roku navigation sequences.
+**September 15, 2026 — Dashboard Capability Expansion:**
+- Known-good `roku-bridge.ps1` backed up locally as `roku-bridge-PROTOTYPE1.ps1` before expansion.
+- Dynamic Good morning/afternoon/evening, Mom greeting added and verified on Fire tablet.
+- Automatic current date added and verified.
+- Weather cards added and displayed for Omaha, Yardley, and Nashville.
+- Weather character-encoding issue corrected.
+- Family Updates button/page added and verified.
+- Family page personalized with Danny rather than generic Grandson label.
+- First real family update successfully displayed: Danny went back to college.
+- Scheduled-task stop/start procedure successfully used to reload dashboard changes without rebooting Windows.
+
+**Current milestone:** the known-good entertainment/reliability baseline remains preserved, while the dashboard has begun functioning as a broader information hub. Next planned software experiment is separating Family Updates content from bridge code; smart-light testing can begin when hardware arrives.
