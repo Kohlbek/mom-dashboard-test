@@ -1,173 +1,171 @@
 # Mom Dashboard — Current Architecture
 
-_Last updated: September 15, 2026_
+_Last updated: September 16, 2026_
 
 ## Purpose
 
-The Mom Dashboard is a Human + AI aging-parent support experiment. The goal is to reduce routine caregiver workload while preserving Mom's independence and making everyday technology easier to use.
+The Mom Dashboard is a Human + AI aging-parent support experiment. The goal is to increase Mom's independence, safety, connection, and comfort while reducing repetitive caregiver work. The design preference is to remove unnecessary tasks from Mom rather than teach her additional technology.
 
-The current working prototype focuses on simplifying Roku TV use. Instead of asking Mom to navigate Roku menus, search results, providers, and playback screens, the dashboard reduces the task to one large button press.
-
-## Current Working Architecture
+## Current Architecture
 
 ```text
 Fire tablet
    |
-   | opens local dashboard in Silk
    v
-Windows bridge computer (192.168.0.241:8080)
+Windows bridge (192.168.0.241:8080)
+   |---------------- Roku ECP ----------------> Hisense Roku TVs
+   |---------------- local UDP ---------------> Govee H6004 bulbs
    |
-   | PowerShell HTTP listener + Roku control logic
-   v
-Roku TV test target (192.168.0.210:8060)
-   |
-   | Roku ECP commands over local network
-   v
-Roku UI / Search / Roku Channel
-   |
-   v
-The Lone Ranger or Johnny Carson plays
+   +---------------- scheduled printing ------> Brother MFC-L2760DW
+
+Blink cameras ---- motion ----> Alexa routine ----> Govee lights
+      |
+      +---- snapshots/live view ----> visual inventory experiments
 ```
 
-## Components
+The Windows bridge remains the prototype local controller. GitHub is the source/documentation repository; no router port forwarding is required.
 
-### 1. Fire tablet
-- Acts as Mom's simplified control surface.
-- Uses Amazon Silk browser.
-- Displays very large buttons designed to avoid normal Roku navigation.
-- Current working buttons:
-  - `WATCH THE LONE RANGER`
-  - `WATCH JOHNNY CARSON`
+## Fire Tablet / Dashboard
 
-### 2. Windows bridge computer
-- Current test IP: `192.168.0.241`
-- Runs `roku-bridge.ps1`.
-- Hosts the local dashboard on port `8080`.
-- Receives browser requests such as:
-  - `/lone-ranger`
-  - `/johnny-carson`
-  - `/home`
-  - `/test`
-- Sends Roku ECP commands to the TV.
-- This is a prototype dependency and is not intended to be the permanent production host.
+The Fire tablet uses Amazon Silk to open the local dashboard. The current proven Prototype 3 dashboard includes:
 
-### 3. Roku TV control
-- Test Roku IP: `192.168.0.210`
-- Mom's primary Hisense Roku TV has also been tested separately and uses reserved IP `192.168.0.87`.
-- Roku ECP control is enabled.
-- Fast TV Start / wake-on-WLAN has been enabled and tested.
-- DHCP reservations were configured to keep Roku IP addresses stable.
+- WATCH THE LONE RANGER
+- WATCH JOHNNY CARSON
+- WATCH THE RIFLEMAN
+- WATCH WEATHER (WeatherNation)
+- ABC NEWS
+- KETV 7
+- Family Updates
+- Living Room Lights ON/OFF
+- Omaha, Yardley, and Nashville weather cards
+- Dynamic greeting and date
 
-## Roku Control Method
+Family Updates currently remain hard-coded in the bridge. Current Danny update: `Danny went back to college.` A future maintenance improvement is to separate routine content from the bridge code.
 
-The dashboard does not rely on the Roku mobile app or Alexa for playback.
+## Roku Control
 
-The bridge sends local Roku ECP HTTP POST commands such as:
+Test TV: `192.168.0.210`
+
+Other/Mom primary TV: `192.168.0.87`
+
+Roku ECP on port 8060 is used for PowerOn, Home, navigation, Select, and Lit_ text injection. Search-result navigation remains deterministic and therefore somewhat brittle if Roku changes its UI.
+
+### Proven content sequences
+
+- The Lone Ranger — end-to-end from TV off through playback.
+- Johnny Carson — correct 1972–1992 listing and Roku Channel playback.
+- The Rifleman — search `the rifleman`, Right x6, Down x2, Select, wait 7 seconds, Select.
+- ABC News Live — search `abc news live`, Right x6, Down x1, Select.
+- KETV 7 — search `ketv7`, Right x6, Down x1, Select, wait 3 seconds, Select.
+- WeatherNation — search `weathern`, Right x6, Down x1, Select.
+
+### Important Roku findings
+
+**Fast TV Start must be ON.** With Fast TV Start off, a Roku left off for an extended period became unreachable by ping/ECP and could not be awakened by the dashboard. After enabling Fast TV Start, the `.210` TV passed a five-hour off/standby test and woke successfully through the dashboard. Treat Fast TV Start as a deployment requirement.
+
+ECP text injection leaves Roku keyboard focus on the letter **A**, rather than moving focus to the last typed character as manual remote typing does. Navigation sequences must be designed from that known focus position.
+
+## Govee Local Lighting
+
+Two Govee H6004 bulbs are installed in the living room.
+
+- Bulb 1: `192.168.0.154`
+- Bulb 2: `192.168.0.228`
+- Local control: UDP port 4003
+- LAN Control must be enabled independently on each bulb.
+
+The bulbs use 2.4 GHz Wi-Fi; the Acer bridge can remain on 5 GHz because the router routes between bands. Local ON/OFF has been proven without depending on the Govee cloud API.
+
+## MOM — TODAY Printing
+
+The proactive morning-sheet prototype is operational.
+
+- Printer: Brother MFC-L2760DW
+- Script: `C:\Users\dan\OneDrive\Desktop\mom-today-print.ps1`
+- Scheduled Task: `Mom Today Daily Print`
+- Schedule: daily at 8:30 AM local Central time, StartWhenAvailable
+- Rendering/printing: HTML launched in a separate Microsoft Edge user-data profile with kiosk printing and `window.print()`.
+
+The large-print physical design was tested and accepted. The current content includes date, weather area, reminders, family note, and Don't Forget section.
+
+## Blink / Visual Inventory
+
+September 16 produced a working visual-inventory proof of concept.
+
+A wireless Blink camera was placed inside the refrigerator on the top shelf. It maintained connectivity with the refrigerator door closed, updated its thumbnail, and provided live view using infrared/night vision.
+
+Mom normally uses the top shelf when the caregiver is away. The initial target inventory is deliberately small and predictable:
+
+- Milk
+- Coke
+- Pizza box
+
+The proposed shelf design uses labeled fixed zones (`MILK | COKE | PIZZA`) to make visual detection more reliable. The intended status model is `PLENTY / OK / LOW / OUT / CAN'T TELL`, with simple `PRESENT / LOW / OUT` sufficient for the refrigerator V1.
+
+A two-image test with an item removed demonstrated that a visual change could be detected and converted into an inventory/shopping recommendation. This is **Visual Inventory Prototype 1 — PASS**.
+
+Basement photographs also demonstrated the value of visual inventory for household supplies, especially excess paper towels and toilet paper. An important design finding is that household inventory can be distributed across multiple locations, so future recommendations should consider total household inventory rather than a single storage point.
+
+## Shopping Assistant Direction
+
+The emerging model is:
 
 ```text
-http://ROKU_IP:8060/keypress/Home
-http://ROKU_IP:8060/keypress/Right
-http://ROKU_IP:8060/keypress/Select
-http://ROKU_IP:8060/keypress/Lit_X
+Visual inventory + known recurring needs/preferences
+                  |
+                  v
+          Shopping recommendations
+        BUY / REMIND / DON'T BUY
+                  |
+                  v
+      future store-arrival reminder
+                  |
+                  v
+ future delivery/cart preparation + human approval
 ```
 
-The prototype uses Roku Search and deterministic navigation sequences.
+Initial examples:
 
-## The Lone Ranger sequence
+- REMIND: bananas (liked but often forgotten)
+- DON'T BUY: paper towels and toilet paper while household reserve is abundant
+- BUY: genuinely depleted regular items
+- DELIVERY CANDIDATE: heavy/bulky items that are increasingly difficult for Mom to carry
 
-Current proven logic:
+Mom's regular shopping is highly repetitive, which makes a small known-item model preferable to a general-purpose shopping system.
 
-1. PowerOn
-2. Wait for wake
-3. Home
-4. Open left navigation
-5. Move to Search
-6. Enter Search
-7. Type `The Lone Ranger` character-by-character through ECP
-8. Move right six times from the keyboard
-9. Select the first correct result
-10. Wait for detail page
-11. Select the first Roku Channel playback option
+## Motion Lighting
 
-This sequence has been tested successfully from TV off through playback.
+A hallway Blink camera was successfully used as an Alexa Routine motion trigger. Alexa then controlled the existing Govee living-room lights.
 
-## Johnny Carson sequence
-
-Current proven logic:
-
-1. PowerOn
-2. Wait for wake
-3. Home
-4. Open left navigation
-5. Move to Search
-6. Enter Search
-7. Type `Johnny Carson` character-by-character through ECP
-8. Move right six times to the autocomplete area
-9. Move down to TV-show results
-10. Move right to the correct 1972–1992 listing
-11. Select it
-12. Wait for detail page
-13. Select the Roku Channel playback option
-
-This sequence avoids the incorrect Johnny Carson listing and has been tested successfully from TV off through playback.
-
-## Why GitHub Pages is not the active control path
-
-A GitHub Pages dashboard was deployed successfully at:
-
-`https://kohlbek.github.io/mom-dashboard-test/`
-
-The page itself loaded correctly, but direct control of the local Roku from the HTTPS page failed. The local Roku control endpoint is HTTP on a private-network address, and browser mixed-content/private-network restrictions make this architecture unreliable.
-
-Therefore the current working path is local:
+Full tested loop:
 
 ```text
-Fire tablet -> local Windows bridge -> Roku
+Hallway motion -> Blink -> Alexa Routine -> Govee lights ON
+                                      -> wait
+                                      -> Govee lights OFF
 ```
 
-GitHub remains useful as the source repository and backup/version-control location for project code and documentation.
+Both ON and timed OFF were verified. This is **Motion Lighting Prototype 1 — PASS**.
 
-## Network lessons learned
+The intended aging-in-place application is nighttime pathway/bathroom lighting. The existing bathroom wall switch also controls the fan, so replacing the bathroom bulb with an always-powered smart bulb is not appropriate. A simple rechargeable/local motion-sensor light is a likely deployment option; the Blink/Alexa/Govee experiment already proves the more general automation chain.
 
-- Roku control works only when the bridge can route to the TV on the local network.
-- One test failure was traced to a Roku being connected through a different Wi-Fi band/network path; after correcting Wi-Fi connectivity, ECP immediately worked again.
-- DHCP reservations are important because dashboard code references stable local addresses.
-- Router port forwarding is not required and should not be used for direct Roku exposure.
+## Design Principles Emerging from Testing
 
-## Current security model
+1. Prove the smallest useful behavior before automating its maintenance.
+2. Prefer removing tasks from Mom over requiring her to learn new interfaces.
+3. Change the physical environment when that makes AI simpler and more reliable (for example, labeled refrigerator shelf zones).
+4. Use AI for exception detection rather than unnecessary continuous micromanagement.
+5. Keep purchase decisions human-approved while shopping automation is experimental.
+6. Prefer simple local solutions when they solve the real problem more reliably than a sophisticated cloud chain.
+7. Treat failed experiments as useful constraint discovery.
 
-- Roku ECP remains local to the home network.
-- No Roku port is exposed to the public internet.
-- The dashboard bridge listens locally on port `8080`.
-- GitHub Pages contains only interface code and no sensitive family, banking, or medical data.
+## Security / Privacy
 
-## Planned Architecture Direction
+- Roku and Govee local controls remain on the home LAN.
+- No router port forwarding is used.
+- GitHub should not contain private medical, financial, password, or account information.
+- Camera-based experiments should remain purpose-limited and transparent to Mom.
 
-The Windows bridge is a prototype host. The likely long-term design is:
+## Longer-Term Direction
 
-```text
-GitHub repository / remote content source
-             |
-             v
-Small always-on local controller
-             |
-      --------------------
-      |        |         |
-      v        v         v
-    Roku    Printer    Smart home
-      |                  |
-      v                  v
-Fire tablet         Lights / routines
-```
-
-A small always-on controller could eventually host:
-- Mom Dashboard
-- Roku automation
-- 8:30 AM morning routine
-- Printer automation
-- Govee lighting control
-- Daily update generation
-- Family-email/photo ingestion
-- Other home automation
-
-The user-facing design goal is to keep Mom's interaction extremely simple even as the back-end system becomes more capable.
+The Windows laptop is still a prototype host. A small always-on controller may eventually consolidate dashboard hosting, Roku control, printing, lighting, visual-inventory processing, shopping assistance, family updates, and other routines while keeping Mom's interface extremely simple.
