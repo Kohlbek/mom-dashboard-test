@@ -1,266 +1,225 @@
 # Aging Parent Support / Mom Dashboard — Project Status
 
-_Last updated: September 15, 2026_
+_Last updated: September 16, 2026_
 
-## Status: Prototype 1 Working — Basic Windows Reliability Hardened; Dashboard Capability Expansion Begun
+## Status: Prototype 3 Working — Proactive Support, Visual Inventory, and Motion Automation Proven
 
-The first end-to-end Mom Dashboard prototype is operational. The initial Windows-host reliability phase has passed, and the dashboard has now begun expanding beyond TV control.
+The project has expanded well beyond the original Roku proof of concept. The current system demonstrates entertainment, information, family connection, physical-environment control, proactive printed support, visual household inventory, and motion-triggered lighting.
 
-From the Fire tablet, one button can turn on/control the Roku TV, find the intended program, choose the correct Roku result/provider, and begin playback.
+The working pattern remains: **prove the smallest version -> observe whether it is useful -> measure whether it removes work -> automate maintenance only after the behavior is proven.**
 
-Both initial program buttons have passed end-to-end testing:
+## Proven Capabilities
 
-- **The Lone Ranger — PASS**
-- **Johnny Carson — PASS**
+### Entertainment / Information Dashboard — PASS
 
-The bridge has also passed automatic-start, closed-lid, and extended unattended-idle testing while the Acer laptop is plugged in.
+Current tested dashboard functions include:
 
-On September 15, the dashboard was expanded with a dynamic greeting/date, weather information, and a Family Updates page. The first real family update was successfully displayed.
+- The Lone Ranger
+- Johnny Carson
+- The Rifleman
+- WeatherNation
+- ABC News Live
+- KETV 7
+- Omaha/Yardley/Nashville weather cards
+- Family Updates
+- Living Room Lights ON/OFF
+- Dynamic greeting/date
 
-## What has been proven
+The Roku sequences have been tested from TV off through playback.
 
-### Simplified TV control
-A Roku task that normally requires multiple remote-control steps has been reduced to one large button press on the Fire tablet.
+### Roku Long-Standby Reliability Finding — PASS
 
-This is an important project result because it demonstrates **task elimination/redesign**, rather than merely providing Mom with instructions for performing the existing Roku task.
+A significant A/B reliability issue was isolated on September 16.
 
-### Roku wake/control
-- Roku ECP works over the local network.
-- Fast TV Start allows the TV to wake through network control.
-- PowerOn, Home, navigation, text entry, and Select commands have been tested.
-- Full sequences work from TV off through program playback.
+With **Fast TV Start OFF**, a Roku TV left off for an extended period became unreachable by ping and ECP. Manually turning it on restored network control immediately.
 
-### Content targeting
-- The Lone Ranger automation reaches the correct search result and Roku playback option.
-- Johnny Carson automation reaches the intended 1972–1992 show listing and Roku Channel option rather than the similar incorrect listing.
+After **Fast TV Start ON** was enabled, the `.210` test TV was left off for approximately five hours and then successfully controlled through the dashboard.
 
-### Fire tablet interface
-- The tablet can present a much simpler UI than the Roku remote.
-- Large, single-purpose controls are practical.
-- Mom does not need the Roku mobile app installed on the Fire tablet.
-- Dashboard now automatically displays a time-appropriate greeting: Good morning / Good afternoon / Good evening, Mom.
-- Dashboard automatically displays the current date.
-- Weather information is now displayed for Omaha, NE; Yardley, PA; and Nashville, TN, including current temperature, condition, high, and low.
-- Weather degree-symbol encoding was corrected during testing.
-- A large Family Updates button and dedicated Family Updates page have been added.
+**Conclusion:** Fast TV Start = ON is a system requirement for reliable long-standby network wake/control. Preserve the 15-minute power-reduction setting unless later testing shows a conflict.
 
-### Family Updates — first content test
-The Family Updates capability has passed its first manual content test.
+### Roku Search Navigation Finding
 
-- Dedicated page includes family-member cards and a large Back to Home control.
-- Grandson label was personalized to **Danny**.
-- First real update displayed successfully: **Danny went back to college.**
-- Dashboard/bridge was restarted through the existing Windows Scheduled Task without rebooting the computer, and the update appeared correctly on the Fire tablet.
+ECP text injection leaves the Roku on-screen keyboard focus on **A**, unlike manual typing, which moves focus as characters are entered. This explains earlier navigation-count discrepancies and is now part of the deterministic sequence design.
 
-**Current interpretation:** the presentation layer works. The next useful experiment is to separate family-update content from `roku-bridge.ps1`, so routine content changes do not require editing the working dashboard/Roku code. This creates a foundation for a later Human + AI workflow in which a family update can be provided to ChatGPT and propagated to Mom's dashboard with minimal caregiver effort.
+### Govee Local Smart Lighting — PASS
 
-### Local bridge
-- A PowerShell HTTP bridge running on a Windows computer successfully accepts commands from the Fire tablet and translates them into Roku ECP actions.
-- The bridge also serves the current Mom Dashboard interface.
-- End-to-end TV path is working:
+Two Govee H6004 living-room bulbs are installed and locally controllable through the Windows bridge.
 
-```text
-Fire tablet -> dashboard -> Windows bridge -> Roku -> playback
-```
+- `192.168.0.154`
+- `192.168.0.228`
+- UDP port 4003
+- LAN Control enabled on both bulbs
 
-### Windows bridge reliability hardening
-The current Acer bridge host has been configured and tested for unattended operation while plugged in.
+The Acer can remain on 5 GHz while bulbs use 2.4 GHz. Local ON/OFF does not require the Govee cloud API.
 
-- Windows Scheduled Task created: `Mom Dashboard Roku Bridge`.
-- The task successfully launches `roku-bridge.ps1` at Windows logon.
-- The bridge responded successfully at `/test` when launched by the scheduled task.
-- After a Windows restart, the bridge came back automatically without manually launching PowerShell.
-- AC sleep timeout changed from 15 minutes to **Never**.
-- AC hibernate timeout changed from approximately 12 hours to **Never**.
-- Battery sleep/hibernate behavior was intentionally left unchanged.
-- Acer's hidden `Lid close action` setting was exposed and identified as the cause of the bridge stopping when the lid was closed.
-- AC lid-close action changed from **Sleep** to **Do nothing**.
-- Battery lid-close action remains **Sleep**.
-- With the laptop plugged in and lid closed, The Lone Ranger launched successfully from the Fire tablet.
-- After more than one hour plugged in, lid closed, and untouched, the Fire-tablet control still worked successfully.
+### Prototype 3 — PASS
 
-**Result:** basic Windows-host unattended reliability is considered passed for Prototype 1.
+Prototype 3 demonstrates that the dashboard controls multiple distinct household systems, not just Roku.
 
-### Prototype preservation / restart workflow
-- A frozen local backup of the known-good bridge was created as `roku-bridge-PROTOTYPE1.ps1` before capability expansion.
-- `Test-Path` confirmed the backup exists.
-- Dashboard changes can be activated without a Windows reboot by stopping and restarting the `Mom Dashboard Roku Bridge` Scheduled Task.
+**Milestone name:** Entertainment + Information + Family + Physical Environment.
 
-### GitHub / version control
-- Repository established: `Kohlbek/mom-dashboard-test`
-- GitHub Pages deployment was successfully tested.
-- GitHub is being used to preserve project documentation.
+All current dashboard buttons were tested successfully.
 
-## Problems encountered and what they taught us
+### MOM — TODAY V1 — OPERATIONAL
 
-### Amazon Alexa
-Initial Alexa/Roku work did not provide the desired direct, reliable experience. This helped push the design toward a custom one-touch interface rather than making Mom interact with Alexa/Roku complexity.
+The first proactive daily-assistant capability is installed.
 
-### Fire tablet Roku app
-The Amazon Appstore does not provide the official Roku app, so the project moved toward a browser-based interface.
+A large-print one-page `MOM — TODAY` sheet was physically printed and the final print design was judged successful. It uses large high-contrast text and includes date, weather area, reminders, family note, and a Don't Forget section.
 
-### GitHub Pages to Roku
-The public HTTPS dashboard was tested earlier. The current working prototype serves the dashboard through the local Windows bridge, which also performs Roku control.
+Unattended Edge printing was proven using a separate Edge user-data profile, kiosk printing, and `window.print()`.
 
-### Windows HTTP listener permissions
-PowerShell's `HttpListener` initially failed with `Access is denied`. The bridge was subsequently run successfully and began receiving tablet requests.
+Scheduled Task: `Mom Today Daily Print`
 
-### Roku unreachable on network
-During bridge testing, requests reached the bridge but the bridge reported `Unable to connect to the remote server`.
+Schedule: **8:30 AM every morning**, local Central time, with StartWhenAvailable.
 
-Direct testing showed the Roku temporarily unreachable. Earlier testing also found a Wi-Fi band/network-path issue; after correcting connectivity, ECP worked again.
+This marks an important transition from a system Mom actively operates to a system that can proactively provide useful information.
 
-During the September 15 reboot reliability test, the bridge itself restarted successfully but the first Fire-tablet attempt reported `TV didn't respond`. The Roku still showed IP `192.168.0.210` and the expected Wi-Fi band. ARP resolved `.210` to MAC `68-c8-c0-59-ea-21`, and a subsequent TCP test to Roku ECP port 8060 succeeded. A second Johnny Carson attempt then worked without further intervention.
+## September 16 Visual Inventory Experiment
 
-**Current interpretation:** preserve this as a startup/network reconnection timing observation rather than changing the known-good bridge. The system recovered on its own.
+### Household Inventory Baseline
 
-### Laptop lid behavior
-The Acer power plan initially did not display the lid-close setting in the normal power query. The hidden setting was exposed and showed AC and battery lid-close behavior were both set to Sleep. Changing only the AC lid-close action to Do nothing allowed the bridge to continue operating with the lid closed.
+Basement photos demonstrated very high reserves of paper towels and toilet paper plus other household supplies. Additional toilet-paper stock was identified in the bathroom and hallway closet, revealing an important constraint: **household inventory is distributed across multiple locations**.
 
-### Character encoding during dashboard expansion
-Early dashboard edits produced malformed emoji/degree characters. HTML entities and subsequent corrections produced proper Fire-tablet display. This is a minor implementation lesson for future dashboard content.
+Future inventory recommendations should consider total household stock rather than assuming one shelf or room represents the entire supply.
 
-## Current Prototype Dependencies
+### Refrigerator Camera — PASS
 
-The working prototype currently depends on:
+A wireless Blink camera was temporarily placed on the refrigerator's top shelf.
 
-1. Fire tablet being connected to Mom's home network.
-2. Windows bridge computer being powered on, plugged in, and connected to the network.
-3. Windows user logon occurring so the current scheduled-task trigger can launch the bridge.
-4. `roku-bridge.ps1` running through the scheduled task.
-5. Roku TV being reachable at its reserved IP address.
-6. Roku ECP / mobile-app control being enabled.
-7. Roku Search/results layout remaining compatible with the tested navigation sequence.
-8. Any external data source used by the weather implementation remaining reachable.
+Proven:
 
-## Current Risk / Fragility
+- Camera remained connected with refrigerator door closed.
+- Thumbnail updated.
+- Live view worked with door closed.
+- Infrared/night view produced a usable image.
+- Mom normally uses only the top shelf when the caregiver is away, simplifying the problem.
 
-### High priority
-- **Network reconnection/startup timing:** immediately after one Windows reboot, the bridge was up before the Roku path was ready; the first request failed and a later request succeeded automatically.
-- **Windows laptop dependency:** reliability is substantially improved, but the prototype still depends on a consumer laptop, Windows logon, power, and Wi-Fi.
+Mom's recurring top-shelf items are currently:
 
-### Medium priority
-- **Roku UI navigation dependency:** scripts currently rely on deterministic UI navigation. Roku search-result changes could break sequences.
-- **Local IP assumptions:** DHCP reservations reduce but do not eliminate network configuration risks.
-- **Content maintenance:** Family Updates are currently hard-coded into the bridge/dashboard and therefore still require a code edit plus bridge restart.
+- Milk
+- Coke
+- Pizza box
 
-### Lower priority for prototype
-- Dashboard aesthetics and polish.
-- Additional entertainment choices.
-- More sophisticated error messages.
+The planned physical design is to label fixed shelf zones (`MILK | COKE | PIZZA`) so products return to predictable positions.
 
-## Reliability Phase — Completed and Remaining
+A two-photo test with one item removed demonstrated useful visual change detection and shopping-list inference.
 
-Completed September 15, 2026:
+**Result: Visual Inventory Prototype 1 — PASS.**
 
-1. Preserve the working two-button prototype.
-2. Make bridge startup automatic at Windows logon.
-3. Prevent AC sleep and hibernation.
-4. Keep bridge running with the laptop lid closed while plugged in.
-5. Verify scheduled-task bridge startup after Windows restart.
-6. Verify closed-lid Fire-tablet control.
-7. Verify more than one hour of unattended closed-lid operation.
+### Visual Inventory Design Model
 
-Remaining reliability experiments worth doing before production deployment:
+Use small, explicit status categories rather than pretend to know exact counts:
 
-1. Test recovery after Roku restart/power interruption.
-2. Test tablet reconnect after Wi-Fi interruption.
-3. Revisit network/band behavior if the Roku becomes unreachable again.
-4. Consider simple retry logic for the brief post-reboot Roku/network readiness window.
-5. Eventually decide whether to replace the Windows laptop with a small always-on local controller.
-6. Add simple success/failure feedback only when it provides practical value.
+- PLENTY
+- OK
+- LOW
+- OUT
+- CAN'T TELL
 
-## Capability Expansion — Begun September 15, 2026
+For fixed refrigerator zones, `PRESENT / LOW / OUT` may be enough.
 
-The project has moved beyond the original two-button entertainment proof of concept while preserving its working Roku sequences.
+This experiment supports an important project principle: **AI reliability can sometimes be improved more effectively by changing the physical environment than by making the AI more sophisticated.** Shelf labels and predictable placement make the vision problem simpler and more auditable.
 
-Completed initial capability tests:
+## Shopping Assistant — Concept Advanced
 
-1. **Contextual greeting:** automatic morning/afternoon/evening greeting addressed to Mom.
-2. **Date:** automatic current date on the home screen.
-3. **Weather:** dashboard weather cards successfully displayed for Omaha, Yardley, and Nashville.
-4. **Family Updates UI:** dedicated page accessible from the home dashboard.
-5. **Family Updates content:** first real update successfully displayed for Danny.
+Mom currently uses a paper shopping list, but requiring her to photograph it or maintain a new digital list would create unwanted work, especially while the caregiver is away for much of the year.
 
-Recommended next Family Updates experiment:
+Because her shopping pattern is highly repetitive, the emerging system can combine visual inventory with known recurring preferences.
 
-- Move update content into a small separate data file rather than embedding it in `roku-bridge.ps1`.
-- Keep the proven Roku/navigation code isolated from routine family-content changes.
-- After that works, test a lower-friction update workflow such as: family/caregiver provides update -> AI organizes/simplifies -> dashboard data changes -> Mom sees update.
-- Initially retain human approval before family information is published to Mom's dashboard.
+Initial model:
 
-Smart-light testing remains queued for when the bulbs arrive.
+- **BUY** — genuinely needed/depleted item
+- **REMIND** — item Mom likes but often forgets, e.g. bananas
+- **DON'T BUY** — household already has plenty, especially paper towels/toilet paper
+- **DELIVERY CANDIDATE** — heavy/bulky items that are increasingly difficult for Mom to carry
 
-## Broader Aging Parent Support Project
+Longer-term path:
 
-The dashboard is one experiment inside a larger Human + AI aging-parent support project.
+`Visual inventory -> suggested list -> store-arrival reminder -> delivery/cart preparation -> Mom/Dan approval -> purchase`
 
-Potential modules include:
-- Daily `MOM — TODAY` printed sheet
-- One-touch entertainment — **prototype working**
-- Family updates/photos — **initial text capability working**
-- Weather/contextual daily information — **initial dashboard capability working**
-- Simplified current-news summaries
-- Calendar/appointment reminders
-- Emergency/medical information binder
-- Household inventory reminders
-- Shopping assistance
-- Bills/admin support for caregiver
-- Smart-light routines — **hardware pending**
-- Front-door camera access
-- Coffee routine with appropriate safety constraints
+Keep humans in the purchase loop while accuracy and usefulness are being measured.
 
-These should be introduced incrementally and evaluated against the project objective: increase Mom's independence and quality of life while reducing repetitive caregiver workload without replacing appropriate human judgment or care.
+Regular stores identified for future arrival-reminder testing:
 
-## Measurement ideas to retain
+- Supermercado Nuestra Familia, Harrison Street area
+- Fareway Meat & Grocery, Papillion area
 
-For each intervention, track where practical:
-- caregiver time before/after
-- repeated problems eliminated
-- number of support calls/interventions
-- Mom's ability to complete the task independently
-- Mom's frustration
-- caregiver stress
-- mistakes/failures
-- financial savings or avoided unnecessary purchases
-- setup/maintenance complexity
-- AI errors vs. human errors
-- whether saved support time becomes higher-quality family interaction
+Geofencing is not required for V1. First prove the list/recommendation behavior; automate the trigger later.
 
-A particularly useful project metric is **time converted**: support/troubleshooting time converted into ordinary family conversation or other higher-value interaction.
+## September 16 Motion Lighting Experiment
+
+A hallway Blink camera was configured as an Alexa Routine motion trigger. The routine controlled the existing Govee living-room lights.
+
+Full chain tested:
+
+`Hallway motion -> Blink -> Alexa -> Govee lights ON -> timed wait -> lights OFF`
+
+Both automatic ON and automatic timed OFF worked.
+
+**Result: Motion Lighting Prototype 1 — PASS.**
+
+Potential aging-in-place application: illuminate a path/bathroom before Mom reaches it at night.
+
+The existing bathroom switch controls both the bathroom light and fan, so an always-powered smart bulb is not appropriate there. A low-cost rechargeable/local motion-sensor light is likely the simplest deployment solution. The more complex Blink/Alexa/Govee automation chain has already been proven with the living-room lights.
+
+## Emergency & Medical Readiness
+
+Milestone 5 has begun. A V1 Emergency Information Sheet has been completed separately.
+
+A DNR / advance-care-planning discussion is on this week's backlog. Mom has stated a preference for DNR, but no formal DNR should be represented as existing until appropriate documentation/medical orders are completed.
+
+Sensitive medical and personal details should not be stored in this public/source repository.
+
+## Key Design Lessons
+
+1. **Task elimination beats instruction.** Reduce the number of steps Mom must perform rather than teaching a complex existing process.
+2. **Ambient assistance is promising.** Refrigerator inventory and motion lighting can provide help without requiring Mom to operate an AI interface.
+3. **Change the environment when useful.** Shelf labels/fixed zones can make simple vision more reliable than a more complex recognition system.
+4. **Detect exceptions.** The system should surface `LOW`, `OUT`, unexpected bills, etc., rather than require constant caregiver inspection.
+5. **Prototype before infrastructure.** Phone/manual photos can validate vision before automating Blink acquisition; existing lights can validate motion logic before buying bathroom hardware.
+6. **Keep humans in consequential loops.** Shopping orders and similar actions should remain approval-based during experimentation.
+7. **Failed tests reveal requirements.** The bathroom fan/light switch constraint and Roku Fast TV Start behavior both improved the design without needing elaborate workarounds.
+
+## Current Dependencies / Risks
+
+- Windows Acer bridge remains a prototype dependency.
+- Roku deterministic navigation depends on Roku UI/search layouts.
+- Fast TV Start must remain enabled on controlled Roku TVs.
+- Govee local LAN control depends on stable local networking and LAN Control remaining enabled.
+- Blink/Alexa motion routines introduce cloud/service dependencies; simple local motion lights may be preferable for safety-critical nighttime illumination.
+- Visual inventory can be fooled by occlusion, misplaced products, lighting/camera changes, or inventory stored elsewhere; use `CAN'T TELL` and household-zone logic instead of guessing.
+
+## Near-Term Backlog
+
+- Observe first unattended 8:30 AM `MOM — TODAY` production print.
+- DNR / advance-care planning during the week.
+- Add simple refrigerator shelf labels and observe normal use.
+- Continue visual-inventory testing under normal household conditions rather than staged conditions.
+- Explore shopping-assistant V1 around Mom's small recurring item set.
+- Consider low-cost rechargeable motion light for bathroom deployment.
+- Separate Family Updates content from bridge code when maintenance friction warrants it.
+- Continue reliability soak tests rather than changing known-good systems unnecessarily.
 
 ## Milestone Log
 
-**September 2026 — Prototype 1:**
-- Roku ECP proven.
-- Lone Ranger PowerShell automation proven.
-- Johnny Carson PowerShell automation proven.
-- GitHub repository and Pages site established.
-- Fire-tablet dashboard built.
-- Local Windows bridge built.
-- Fire tablet -> bridge -> Roku communication proven.
-- The Lone Ranger one-touch playback passed.
-- Johnny Carson one-touch playback passed.
+**Prototype 1:** Roku ECP, Lone Ranger, Johnny Carson, Fire-tablet dashboard, local Windows bridge, end-to-end one-touch playback.
 
-**September 15, 2026 — Prototype 1 Reliability Baseline:**
-- Bridge automatic startup at Windows logon proven.
-- Bridge recovery after Windows restart proven.
-- AC sleep disabled.
-- AC hibernation disabled.
-- AC lid-close action changed to Do nothing; battery behavior retained.
-- Closed-lid dashboard operation proven.
-- More-than-one-hour unattended closed-lid operation proven.
-- Brief post-reboot Roku/network readiness delay observed; system recovered without intervention.
+**September 15 — Reliability baseline:** automatic bridge startup, restart recovery, AC sleep/hibernate disabled, lid-close reliability, unattended operation.
 
-**September 15, 2026 — Dashboard Capability Expansion:**
-- Known-good `roku-bridge.ps1` backed up locally as `roku-bridge-PROTOTYPE1.ps1` before expansion.
-- Dynamic Good morning/afternoon/evening, Mom greeting added and verified on Fire tablet.
-- Automatic current date added and verified.
-- Weather cards added and displayed for Omaha, Yardley, and Nashville.
-- Weather character-encoding issue corrected.
-- Family Updates button/page added and verified.
-- Family page personalized with Danny rather than generic Grandson label.
-- First real family update successfully displayed: Danny went back to college.
-- Scheduled-task stop/start procedure successfully used to reload dashboard changes without rebooting Windows.
+**September 15 — Dashboard expansion:** greeting/date, weather, Family Updates, first Danny update.
 
-**Current milestone:** the known-good entertainment/reliability baseline remains preserved, while the dashboard has begun functioning as a broader information hub. Next planned software experiment is separating Family Updates content from bridge code; smart-light testing can begin when hardware arrives.
+**September 16 — Prototype 2/3 expansion:** local Govee control; Rifleman, WeatherNation, ABC News, KETV; all dashboard buttons tested successfully.
+
+**September 16 — Roku reliability:** Fast TV Start A/B finding; five-hour off/standby wake test passed with Fast TV Start enabled.
+
+**September 16 — MOM — TODAY:** large-print design proven; unattended printing method proven; 8:30 AM daily scheduled task installed.
+
+**September 16 — Visual Inventory Prototype 1:** Blink camera worked inside closed refrigerator; small known-item refrigerator model established; item-removal comparison demonstrated useful inventory inference.
+
+**September 16 — Motion Lighting Prototype 1:** hallway Blink motion -> Alexa -> Govee ON -> timed OFF, full loop passed.
+
+## Current Interpretation
+
+The project has moved from a one-touch TV controller into an early **ambient aging-in-place support system**. The strongest new direction is not asking Mom to interact with more AI. It is using simple interfaces, environmental cues, sensors, cameras, automation, and AI interpretation so useful support appears when needed with minimal additional effort from her.
+
+The next phase should continue favoring small real-world experiments over broad platform building.
