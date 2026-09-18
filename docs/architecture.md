@@ -1,6 +1,6 @@
 # Mom Dashboard — Current Architecture
 
-_Last updated: September 16, 2026_
+_Last updated: September 17, 2026_
 
 ## Purpose
 
@@ -20,124 +20,133 @@ Windows bridge (192.168.0.241:8080)
 
 Blink cameras ---- motion ----> Alexa routine ----> Govee lights
       |
-      +---- snapshots/live view ----> visual inventory experiments
+      +---- snapshots/live view ----> visual inventory zones
+                                             |
+                                             v
+                                human baseline + AI change detection
 ```
 
-The Windows bridge remains the prototype local controller. GitHub is the source/documentation repository; no router port forwarding is required.
+The Windows bridge remains the prototype local controller. No router port forwarding is required.
 
 ## Fire Tablet / Dashboard
 
-The Fire tablet uses Amazon Silk to open the local dashboard. The current proven Prototype 3 dashboard includes:
-
-- WATCH THE LONE RANGER
-- WATCH JOHNNY CARSON
-- WATCH THE RIFLEMAN
-- WATCH WEATHER (WeatherNation)
-- ABC NEWS
+Current Prototype 3 includes:
+- The Lone Ranger
+- Johnny Carson
+- The Rifleman
+- WeatherNation
+- ABC News
 - KETV 7
 - Family Updates
 - Living Room Lights ON/OFF
-- Omaha, Yardley, and Nashville weather cards
-- Dynamic greeting and date
-
-Family Updates currently remain hard-coded in the bridge. Current Danny update: `Danny went back to college.` A future maintenance improvement is to separate routine content from the bridge code.
+- Omaha, Yardley, Nashville weather cards
+- Dynamic greeting/date
 
 ## Roku Control
 
 Test TV: `192.168.0.210`
+Mom primary TV: `192.168.0.87`
+Roku ECP: port 8060.
 
-Other/Mom primary TV: `192.168.0.87`
+**Deployment requirement:** Fast TV Start = ON. The .210 TV passed an approximately five-hour off/standby wake test after Fast TV Start was enabled.
 
-Roku ECP on port 8060 is used for PowerOn, Home, navigation, Select, and Lit_ text injection. Search-result navigation remains deterministic and therefore somewhat brittle if Roku changes its UI.
-
-### Proven content sequences
-
-- The Lone Ranger — end-to-end from TV off through playback.
-- Johnny Carson — correct 1972–1992 listing and Roku Channel playback.
-- The Rifleman — search `the rifleman`, Right x6, Down x2, Select, wait 7 seconds, Select.
-- ABC News Live — search `abc news live`, Right x6, Down x1, Select.
-- KETV 7 — search `ketv7`, Right x6, Down x1, Select, wait 3 seconds, Select.
-- WeatherNation — search `weathern`, Right x6, Down x1, Select.
-
-### Important Roku findings
-
-**Fast TV Start must be ON.** With Fast TV Start off, a Roku left off for an extended period became unreachable by ping/ECP and could not be awakened by the dashboard. After enabling Fast TV Start, the `.210` TV passed a five-hour off/standby test and woke successfully through the dashboard. Treat Fast TV Start as a deployment requirement.
-
-ECP text injection leaves Roku keyboard focus on the letter **A**, rather than moving focus to the last typed character as manual remote typing does. Navigation sequences must be designed from that known focus position.
+ECP text injection leaves on-screen keyboard focus on **A**; deterministic navigation sequences are designed from that position.
 
 ## Govee Local Lighting
 
-Two Govee H6004 bulbs are installed in the living room.
+Two Govee H6004 bulbs:
+- `192.168.0.154`
+- `192.168.0.228`
+- UDP port 4003
+- LAN Control enabled independently on both
 
-- Bulb 1: `192.168.0.154`
-- Bulb 2: `192.168.0.228`
-- Local control: UDP port 4003
-- LAN Control must be enabled independently on each bulb.
-
-The bulbs use 2.4 GHz Wi-Fi; the Acer bridge can remain on 5 GHz because the router routes between bands. Local ON/OFF has been proven without depending on the Govee cloud API.
+Local ON/OFF does not require Govee cloud API.
 
 ## MOM — TODAY Printing
-
-The proactive morning-sheet prototype is operational.
 
 - Printer: Brother MFC-L2760DW
 - Script: `C:\Users\dan\OneDrive\Desktop\mom-today-print.ps1`
 - Scheduled Task: `Mom Today Daily Print`
-- Schedule: daily at 8:30 AM local Central time, StartWhenAvailable
-- Rendering/printing: HTML launched in a separate Microsoft Edge user-data profile with kiosk printing and `window.print()`.
+- Daily: 8:30 AM local Central time, StartWhenAvailable
+- Rendering: HTML in separate Microsoft Edge user-data profile with kiosk printing and `window.print()`
 
-The large-print physical design was tested and accepted. The current content includes date, weather area, reminders, family note, and Don't Forget section.
+The large-print design was accepted. On **September 17, 2026**, the first real-world scheduled 8:30 AM production print completed successfully without intervention.
 
-## Blink / Visual Inventory
+**MOM — TODAY Prototype 1 — PASS.**
 
-September 16 produced a working visual-inventory proof of concept.
+## Blink / Visual Inventory Architecture
 
-A wireless Blink camera was placed inside the refrigerator on the top shelf. It maintained connectivity with the refrigerator door closed, updated its thumbnail, and provided live view using infrared/night vision.
+### Refrigerator
 
-Mom normally uses the top shelf when the caregiver is away. The initial target inventory is deliberately small and predictable:
+Prototype 1 proved that a Blink camera can remain connected and provide usable live/IR images inside the closed refrigerator.
 
+Initial known-item model:
 - Milk
 - Coke
 - Pizza box
 
-The proposed shelf design uses labeled fixed zones (`MILK | COKE | PIZZA`) to make visual detection more reliable. The intended status model is `PLENTY / OK / LOW / OUT / CAN'T TELL`, with simple `PRESENT / LOW / OUT` sufficient for the refrigerator V1.
+Next step: clean refrigerator, establish fixed labeled zones `MILK | COKE | PIZZA`, then capture a baseline and observe normal use.
 
-A two-image test with an item removed demonstrated that a visual change could be detected and converted into an inventory/shopping recommendation. This is **Visual Inventory Prototype 1 — PASS**.
+### Basement Mom Inventory Zone
 
-Basement photographs also demonstrated the value of visual inventory for household supplies, especially excess paper towels and toilet paper. An important design finding is that household inventory can be distributed across multiple locations, so future recommendations should consider total household inventory rather than a single storage point.
+On September 17, supplies were physically consolidated so approximately 90% of the items Mom normally goes into the basement to retrieve are in one monitored area.
+
+Architecture:
+
+```text
+Known Mom supplies
+      |
+      v
+fixed/labeled physical locations
+      |
+      v
+permanent basement Blink camera
+      |
+      v
+repeatable daytime / IR images
+      |
+      v
+compare against human-confirmed baseline
+      |
+      v
+PLENTY / OK / LOW / OUT / CAN'T TELL
+      |
+      v
+surface meaningful exceptions
+```
+
+The Blink view covers:
+- left paper-product zone;
+- right organized Mom-supply shelving.
+
+Unlabeled areas, including the caregiver's bottom shelf, are explicitly outside the monitoring scope.
+
+The camera is not expected to reconstruct exact quantities hidden behind front items. Human-confirmed baseline quantities and item context are authoritative. AI should primarily detect meaningful visual changes from that known state.
+
+Inventory state should account for **consumption rate as well as package count**. Example: a single box of toilet-tablet cleaner contains multiple tablets and is expected to last at least one year, so its status is PLENTY rather than LOW.
+
+**Basement Visual Inventory Prototype 2 — BASELINE ESTABLISHED.**
 
 ## Shopping Assistant Direction
 
-The emerging model is:
-
 ```text
-Visual inventory + known recurring needs/preferences
-                  |
-                  v
-          Shopping recommendations
-        BUY / REMIND / DON'T BUY
-                  |
-                  v
-      future store-arrival reminder
-                  |
-                  v
- future delivery/cart preparation + human approval
+human-confirmed baseline + recurring needs/preferences
+                       |
+Blink visual change ---+
+                       |
+                       v
+             shopping recommendation
+      BUY / REMIND / DON'T BUY / DELIVERY CANDIDATE
+                       |
+                       v
+                human approval
 ```
 
-Initial examples:
-
-- REMIND: bananas (liked but often forgotten)
-- DON'T BUY: paper towels and toilet paper while household reserve is abundant
-- BUY: genuinely depleted regular items
-- DELIVERY CANDIDATE: heavy/bulky items that are increasingly difficult for Mom to carry
-
-Mom's regular shopping is highly repetitive, which makes a small known-item model preferable to a general-purpose shopping system.
+The intended role of AI is exception detection, not continuous inventory micromanagement.
 
 ## Motion Lighting
 
-A hallway Blink camera was successfully used as an Alexa Routine motion trigger. Alexa then controlled the existing Govee living-room lights.
-
-Full tested loop:
+Tested loop:
 
 ```text
 Hallway motion -> Blink -> Alexa Routine -> Govee lights ON
@@ -145,26 +154,28 @@ Hallway motion -> Blink -> Alexa Routine -> Govee lights ON
                                       -> Govee lights OFF
 ```
 
-Both ON and timed OFF were verified. This is **Motion Lighting Prototype 1 — PASS**.
+**Motion Lighting Prototype 1 — PASS.**
 
-The intended aging-in-place application is nighttime pathway/bathroom lighting. The existing bathroom wall switch also controls the fan, so replacing the bathroom bulb with an always-powered smart bulb is not appropriate. A simple rechargeable/local motion-sensor light is a likely deployment option; the Blink/Alexa/Govee experiment already proves the more general automation chain.
+A simple rechargeable/local motion-sensor light remains a likely bathroom deployment because the existing bathroom wall switch controls both the light and fan.
 
 ## Design Principles Emerging from Testing
 
-1. Prove the smallest useful behavior before automating its maintenance.
-2. Prefer removing tasks from Mom over requiring her to learn new interfaces.
-3. Change the physical environment when that makes AI simpler and more reliable (for example, labeled refrigerator shelf zones).
-4. Use AI for exception detection rather than unnecessary continuous micromanagement.
-5. Keep purchase decisions human-approved while shopping automation is experimental.
-6. Prefer simple local solutions when they solve the real problem more reliably than a sophisticated cloud chain.
-7. Treat failed experiments as useful constraint discovery.
+1. Prove the smallest useful behavior before automating maintenance.
+2. Prefer removing tasks from Mom over requiring new interfaces.
+3. **Structure the environment so AI has fewer things it needs to be intelligent about.**
+4. Fixed zones and labels serve two purposes: they help Mom and make camera interpretation more reliable.
+5. Human-confirmed baseline data should override uncertain visual inference.
+6. Use cameras primarily for change/exception detection rather than exact hidden-object counting.
+7. Keep purchase decisions human-approved while shopping automation is experimental.
+8. Prefer simple local solutions when they solve the real problem more reliably than sophisticated cloud chains.
+9. Treat failed experiments as useful constraint discovery.
 
 ## Security / Privacy
 
-- Roku and Govee local controls remain on the home LAN.
-- No router port forwarding is used.
+- Roku and Govee controls remain on the home LAN.
+- No router port forwarding.
 - GitHub should not contain private medical, financial, password, or account information.
-- Camera-based experiments should remain purpose-limited and transparent to Mom.
+- Camera experiments should remain purpose-limited and transparent to Mom.
 
 ## Longer-Term Direction
 
