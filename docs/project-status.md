@@ -1,6 +1,6 @@
 # Aging Parent Support / Mom Dashboard — Project Status
 
-_Last updated: September 17, 2026_
+_Last updated: September 19, 2026_
 
 ## Status: Prototype 3 Working — Proactive Support, Visual Inventory, and Motion Automation Proven
 
@@ -185,3 +185,71 @@ Sensitive medical and personal details should not be stored in this public/sourc
 The project is becoming an early **ambient aging-in-place support system**. A particularly strong finding is that AI performance can improve by redesigning the environment around the task: consolidate relevant supplies, create fixed zones, establish human ground truth once, and ask AI to detect exceptions rather than continuously reconstruct the entire household state.
 
 The next phase should continue favoring small real-world experiments over broad platform building.
+
+## September 19 Addendum — MOM — TODAY + Automated Visual Inventory
+
+### Refrigerator Visual Inventory Prototype 2 — BASELINE ESTABLISHED
+
+A cleaned refrigerator layout established fixed visual zones for the initial monitored set:
+- Milk — PRESENT
+- Coke — PRESENT (Dr Pepper is temporarily standing in for Coke during testing)
+- Pizza — PRESENT
+
+Eggs and other refrigerator contents are outside the monitoring scope. The permanent refrigerator Blink mount remains pending; a phone image is serving as the temporary baseline while the physical mount is completed.
+
+### MOM — TODAY Prototype 2 — PASS
+
+The accepted one-page MOM — TODAY layout was expanded with a complete, readable **WHAT YOU HAVE AT HOME** inventory section rather than exceptions only. This is intentionally Mom-facing: it provides a daily reference for what is already in the house and gives her useful material to read each morning.
+
+The printed inventory includes the established basement household inventory plus refrigerator items (Milk, Coke, Pizza). The test print remained readable and fit on one page.
+
+Design split:
+- **Mom view:** full simple inventory.
+- **Caregiver/admin view:** changes and exceptions only.
+
+Future inventory-state changes should feed the same MOM — TODAY inventory automatically.
+
+### Bathroom Lighting Prototype 2 — FUNCTIONAL / LATENCY LIMIT FOUND
+
+A spare Govee H6004 was tested for bathroom use. Blink -> Alexa -> Govee control works, but observed response latency was at least about five seconds, which is too slow for a bathroom immediately adjacent to the bedroom.
+
+Govee Auto Run supports device-status triggers and overnight validity windows, but physical wall-switch power restoration does not generate the same ON trigger as an app-issued ON command. A wall-switch test therefore did not trigger the automation, while app control did.
+
+Result: technically functional, but not suitable for this deployment requirement without a simpler/faster local trigger.
+
+### Basement Visual Inventory Prototype 3 — AUTOMATIC IMAGE ACQUISITION PASS
+
+The Acer prototype host was equipped with Python 3.13 and BlinkPy. It successfully:
+1. authenticated to Blink;
+2. enumerated the household Blink cameras;
+3. selected **Mom’s Basement**;
+4. requested a fresh camera snapshot; and
+5. saved the raw camera image locally as `basement-latest.jpg`.
+
+This removes the manual step of opening the Blink app and sending a screenshot.
+
+### Inventory Change Detector Prototype 1 — PASS
+
+A controlled bleach-removal test was performed using two automatically retrieved Blink images:
+- `basement-baseline.jpg` — bleach present;
+- `basement-latest.jpg` — bleach removed.
+
+A Python/Pillow script cropped the known bleach shelf zone and calculated an average grayscale pixel-difference score. The test produced a score of **10.57** against an initial experimental threshold of 10 and correctly returned:
+
+`Bleach = OUT`
+
+The threshold is **not yet calibrated**. The next test should take several unchanged snapshots with bleach present to measure normal variation from IR exposure, JPEG compression, and camera/image noise. The goal is to establish separation between normal image variation and a meaningful inventory change before connecting the detector to MOM — TODAY.
+
+Current proven chain:
+
+`Blink camera -> Acer requests snapshot -> raw image saved -> fixed-zone comparison -> inventory state`
+
+Next integration target:
+
+`inventory state -> MOM — TODAY data -> dashboard/8:30 AM print`
+
+### New Design Finding
+
+The successful visual-inventory path is becoming a configuration problem rather than a separate script per product. One inventory processor can hold fixed zones, baselines, thresholds, and state rules for multiple basement and refrigerator items, then output the household state consumed by MOM — TODAY.
+
+The next calibration work should avoid unnecessary complexity: measure normal image noise first, then decide whether simple fixed-zone pixel comparison is robust enough or whether a smarter visual comparison is warranted.
