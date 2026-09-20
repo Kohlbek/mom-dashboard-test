@@ -1,6 +1,6 @@
 # Mom Dashboard — Current Architecture
 
-_Last updated: September 17, 2026_
+_Last updated: September 19, 2026_
 
 ## Purpose
 
@@ -180,3 +180,89 @@ A simple rechargeable/local motion-sensor light remains a likely bathroom deploy
 ## Longer-Term Direction
 
 The Windows laptop is still a prototype host. A small always-on controller may eventually consolidate dashboard hosting, Roku control, printing, lighting, visual-inventory processing, shopping assistance, family updates, and other routines while keeping Mom's interface extremely simple.
+
+## September 19 Architecture Addendum
+
+### MOM — TODAY Inventory Integration
+
+MOM — TODAY Prototype 2 adds a full Mom-facing household inventory to the daily one-page print and planned dashboard view. The full list is intentional: Mom can use it as a daily reference before shopping rather than seeing only exceptions.
+
+Target architecture:
+
+```text
+household inventory state
+        |
+        +----> Mom Dashboard: full readable inventory
+        |
+        +----> MOM — TODAY 8:30 AM print: full readable inventory
+        |
+        +----> caregiver/admin: changes and exceptions only
+```
+
+Current refrigerator monitored set is Milk, Coke, and Pizza. Eggs and other refrigerator contents are explicitly ignored for this prototype.
+
+### Automated Blink Snapshot Acquisition
+
+The Acer now runs Python 3.13 with BlinkPy and can authenticate to Blink, enumerate cameras, request a fresh snapshot from **Mom’s Basement**, and save the raw JPEG locally.
+
+Prototype paths currently include:
+
+```text
+C:\Users\dan\OneDrive\Desktop\blink-test.py
+C:\Users\dan\OneDrive\Desktop\mom-inventory\basement-baseline.jpg
+C:\Users\dan\OneDrive\Desktop\mom-inventory\basement-latest.jpg
+C:\Users\dan\OneDrive\Desktop\mom-inventory\check-inventory.py
+```
+
+### Fixed-Zone Inventory Detection
+
+The first detector uses Pillow to crop a known shelf rectangle and compare the latest image against a human-confirmed baseline.
+
+```text
+Blink snapshot
+     |
+     v
+known fixed zone crop
+     |
+     v
+compare with baseline
+     |
+     v
+difference score
+     |
+     v
+inventory state
+```
+
+A controlled bleach-removal test returned a difference score of **10.57** and correctly classified **Bleach = OUT** using an initial threshold of 10.
+
+The threshold is experimental, not a confidence score. Before production use, collect multiple unchanged images to characterize normal Blink/IR/JPEG variation and calibrate each monitored zone. If normal variation overlaps product-removal changes, replace the simple pixel-difference method with a more robust visual comparison.
+
+The intended scalable implementation is one inventory configuration containing item names, camera/source, fixed-zone coordinates, baseline references, thresholds, and state rules. A single processor should iterate over that configuration rather than creating one script per item.
+
+### Updated End-to-End Target
+
+```text
+Blink camera
+    |
+    v
+Acer requests fresh snapshot
+    |
+    v
+fixed-zone inventory processor
+    |
+    v
+household inventory state
+    |
+    +----> MOM — TODAY print
+    +----> Mom Dashboard
+    +----> caregiver exceptions
+```
+
+### Bathroom Lighting Constraint Update
+
+Blink -> Alexa -> Govee works, but the observed roughly five-second-or-more latency is too slow for the bedroom-adjacent bathroom use case. Govee H6004 Auto Run can use ON status and time windows, but restoring power with the physical wall switch did not fire the ON-status automation; app-issued ON did. This route is therefore parked pending a simpler/faster local solution.
+
+### Architectural Principle Reinforced
+
+**Automate the observation after the environment has been structured.** Human-confirmed baselines and fixed physical zones make a simple, auditable detector possible. Only add more sophisticated vision if measured image variation shows that the simpler method is unreliable.
