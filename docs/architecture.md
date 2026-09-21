@@ -1,6 +1,6 @@
 # Mom Dashboard — Current Architecture
 
-_Last updated: September 19, 2026_
+_Last updated: September 21, 2026_
 
 ## Purpose
 
@@ -9,26 +9,36 @@ The Mom Dashboard is a Human + AI aging-parent support experiment. The goal is t
 ## Current Architecture
 
 ```text
-Fire tablet
-   |
-   v
-Windows bridge (192.168.0.241:8080)
-   |---------------- Roku ECP ----------------> Hisense Roku TVs
-   |---------------- local UDP ---------------> Govee H6004 bulbs
-   |
-   +---------------- scheduled printing ------> Brother MFC-L2760DW
-
-Blink cameras ---- motion ----> Alexa routine ----> Govee lights
-      |
-      +---- snapshots/live view ----> visual inventory zones
-                                             |
-                                             v
-                                human baseline + AI change detection
+Mom-facing layer
+  Fire tablet dashboard
+  MOM — TODAY 8:30 AM print
+          |
+          v
+Windows Acer prototype host
+  192.168.0.241
+     |---- port 8080 ---- Mom Dashboard
+     |---- port 8081 ---- Caregiver/Admin Panel
+     |---- Roku ECP ----> Hisense Roku TVs
+     |---- local UDP ---> Govee H6004 bulbs
+     |---- scheduled ---> Brother MFC-L2760DW
+     |
+     +---- Python/BlinkPy ---> Blink snapshot
+                                |
+                                v
+                         fixed inventory zones
+                                |
+                                v
+                       inventory-state processor
+                                |
+              +-----------------+-----------------+
+              v                                   v
+      Mom full inventory                 caregiver exceptions/
+      print + dashboard                   diagnostics
 ```
 
 The Windows bridge remains the prototype local controller. No router port forwarding is required.
 
-## Fire Tablet / Dashboard
+## Mom Dashboard
 
 Current Prototype 3 includes:
 - The Lone Ranger
@@ -42,23 +52,52 @@ Current Prototype 3 includes:
 - Omaha, Yardley, Nashville weather cards
 - Dynamic greeting/date
 
+Planned synchronization: add the same complete household inventory shown on MOM — TODAY so Mom's paper and screen views match.
+
+## Caregiver/Admin Panel
+
+A separate admin interface runs locally at:
+
+`http://localhost:8081/`
+
+It intentionally remains separate from Mom's simplified UI.
+
+Current dependency checks:
+- scheduled task FOUND/MISSING;
+- print script FOUND/MISSING;
+- Task Scheduler Operational log enabled;
+- Python FOUND/MISSING;
+- Blink script FOUND/MISSING;
+- inventory script FOUND/MISSING;
+- inventory folder FOUND/MISSING.
+
+Current actions:
+- run scheduled print task;
+- run print script;
+- refresh status;
+- request Blink snapshot;
+- run inventory check;
+- open inventory folder.
+
+The admin panel was created after a scheduled-print failure required repeated PowerShell diagnostics. The architectural lesson is that recurring development/diagnostic commands should become controls and status indicators rather than requiring the caregiver to remember commands.
+
 ## Roku Control
 
-Test TV: `192.168.0.210`
-Mom primary TV: `192.168.0.87`
+Test TV: `192.168.0.210`  
+Mom primary TV: `192.168.0.87`  
 Roku ECP: port 8060.
 
-**Deployment requirement:** Fast TV Start = ON. The .210 TV passed an approximately five-hour off/standby wake test after Fast TV Start was enabled.
+**Deployment requirement:** Fast TV Start = ON.
 
-ECP text injection leaves on-screen keyboard focus on **A**; deterministic navigation sequences are designed from that position.
+ECP text injection leaves on-screen keyboard focus on **A**; deterministic navigation sequences account for this.
 
 ## Govee Local Lighting
 
-Two Govee H6004 bulbs:
+Known H6004 bulbs:
 - `192.168.0.154`
 - `192.168.0.228`
 - UDP port 4003
-- LAN Control enabled independently on both
+- LAN Control enabled independently
 
 Local ON/OFF does not require Govee cloud API.
 
@@ -70,199 +109,150 @@ Local ON/OFF does not require Govee cloud API.
 - Daily: 8:30 AM local Central time, StartWhenAvailable
 - Rendering: HTML in separate Microsoft Edge user-data profile with kiosk printing and `window.print()`
 
-The large-print design was accepted. On **September 17, 2026**, the first real-world scheduled 8:30 AM production print completed successfully without intervention.
+Prototype 2 adds the complete **WHAT YOU HAVE AT HOME** inventory.
 
-**MOM — TODAY Prototype 1 — PASS.**
+On **September 21, 2026**, the expanded Prototype 2 sheet completed a scheduled unattended production print and remained readable on one page.
 
-## Blink / Visual Inventory Architecture
+**MOM — TODAY Prototype 2 scheduled unattended production — PASS.**
+
+## Blink / Visual Inventory
 
 ### Refrigerator
 
-Prototype 1 proved that a Blink camera can remain connected and provide usable live/IR images inside the closed refrigerator.
-
-Initial known-item model:
+Monitored Prototype 2 set:
 - Milk
-- Coke
-- Pizza box
+- Coke (Dr Pepper stand-in during testing)
+- Pizza
 
-Next step: clean refrigerator, establish fixed labeled zones `MILK | COKE | PIZZA`, then capture a baseline and observe normal use.
+Eggs and other refrigerator contents are outside scope.
 
-### Basement Mom Inventory Zone
+### Basement
 
-On September 17, supplies were physically consolidated so approximately 90% of the items Mom normally goes into the basement to retrieve are in one monitored area.
+Human-confirmed baseline plus fixed physical zones remain authoritative. The camera is used primarily to detect meaningful changes rather than reconstruct hidden exact quantities.
 
-Architecture:
-
-```text
-Known Mom supplies
-      |
-      v
-fixed/labeled physical locations
-      |
-      v
-permanent basement Blink camera
-      |
-      v
-repeatable daytime / IR images
-      |
-      v
-compare against human-confirmed baseline
-      |
-      v
-PLENTY / OK / LOW / OUT / CAN'T TELL
-      |
-      v
-surface meaningful exceptions
-```
-
-The Blink view covers:
-- left paper-product zone;
-- right organized Mom-supply shelving.
-
-Unlabeled areas, including the caregiver's bottom shelf, are explicitly outside the monitoring scope.
-
-The camera is not expected to reconstruct exact quantities hidden behind front items. Human-confirmed baseline quantities and item context are authoritative. AI should primarily detect meaningful visual changes from that known state.
-
-Inventory state should account for **consumption rate as well as package count**. Example: a single box of toilet-tablet cleaner contains multiple tablets and is expected to last at least one year, so its status is PLENTY rather than LOW.
-
-**Basement Visual Inventory Prototype 2 — BASELINE ESTABLISHED.**
-
-## Shopping Assistant Direction
+Current automatic path:
 
 ```text
-human-confirmed baseline + recurring needs/preferences
-                       |
-Blink visual change ---+
-                       |
-                       v
-             shopping recommendation
-      BUY / REMIND / DON'T BUY / DELIVERY CANDIDATE
-                       |
-                       v
-                human approval
+Admin Blink Snapshot
+       |
+       v
+blink-test.py
+       |
+       v
+C:\Users\dan\OneDrive\Desktop\mom-inventory\basement-latest.jpg
+       |
+       v
+check-inventory.py
+       |
+       v
+known fixed-zone comparison
+       |
+       v
+inventory state
 ```
 
-The intended role of AI is exception detection, not continuous inventory micromanagement.
+The snapshot output was deliberately standardized to the same `mom-inventory` path consumed by the detector. Earlier, Blink wrote a fresh image to Desktop while the detector read an older file inside `mom-inventory`, producing a stale 10.57/OUT result. Standardizing the handoff removed that integration bug.
+
+### Bleach Detector Calibration
+
+Controlled bleach-removed test:
+- score 10.57
+- Bleach = OUT
+
+Fresh bleach-present test:
+- score 8.20
+- Bleach = OK
+
+The current threshold of 10 is experimental. The 2.37-point separation is not sufficient evidence for production reliability. Multiple unchanged/present and removed samples are required before selecting a stable threshold. If score distributions overlap, tighten the crop or adopt a more robust comparison.
+
+## Household Inventory State
+
+Target architecture:
+
+```text
+human-confirmed baseline
+        +
+fixed camera zones
+        +
+consumption context
+        |
+        v
+household inventory state
+        |
+        +----> Mom Dashboard: full readable inventory
+        +----> MOM — TODAY: full readable inventory
+        +----> Admin Panel: changes, errors, exceptions
+```
+
+Mom and caregiver intentionally receive different views:
+- **Mom:** complete simple inventory, useful as a daily reminder/reference.
+- **Caregiver:** exceptions and system health.
+
+## Print Failure / Dependency Monitoring
+
+On September 20 the scheduled task launched PowerShell normally but returned `4294770688 (0xFFFD0000)`. The root cause was that `mom-today-print.ps1` had been moved while backup copies were being organized.
+
+Restoring the expected path returned the task to SUCCESS. The September 21 scheduled print confirmed recovery.
+
+Architectural response: dependencies should be explicit and visible in the admin panel. A missing script should be reported as **MISSING**, not discovered through downstream failure.
+
+## Source / Script Workflow
+
+Google Drive contains a **Mom Dashboard / Scripts** folder for shared source review. The Acer can continue executing controlled local/OneDrive Desktop copies.
+
+Current important local scripts include:
+- `mom-admin.ps1`
+- `mom-today-print.ps1`
+- `roku-bridge.ps1`
+- `blink-test.py`
+- `mom-inventory\check-inventory.py`
+
+Operational principle:
+
+**Collaborative code/config can live in shared storage; live execution remains controlled locally. Secrets remain local.**
+
+Blink credentials/authentication should not be stored in GitHub or ordinary shared source files. Secure local credential/token persistence is a planned next step. If Blink requires fresh 2FA, the system should surface that condition rather than bypass it.
 
 ## Motion Lighting
 
 Tested loop:
 
 ```text
-Hallway motion -> Blink -> Alexa Routine -> Govee lights ON
-                                      -> wait
-                                      -> Govee lights OFF
+Hallway motion -> Blink -> Alexa -> Govee ON -> wait -> Govee OFF
 ```
 
 **Motion Lighting Prototype 1 — PASS.**
 
-A simple rechargeable/local motion-sensor light remains a likely bathroom deployment because the existing bathroom wall switch controls both the light and fan.
-
-## Design Principles Emerging from Testing
-
-1. Prove the smallest useful behavior before automating maintenance.
-2. Prefer removing tasks from Mom over requiring new interfaces.
-3. **Structure the environment so AI has fewer things it needs to be intelligent about.**
-4. Fixed zones and labels serve two purposes: they help Mom and make camera interpretation more reliable.
-5. Human-confirmed baseline data should override uncertain visual inference.
-6. Use cameras primarily for change/exception detection rather than exact hidden-object counting.
-7. Keep purchase decisions human-approved while shopping automation is experimental.
-8. Prefer simple local solutions when they solve the real problem more reliably than sophisticated cloud chains.
-9. Treat failed experiments as useful constraint discovery.
+Bathroom Blink/Alexa/Govee testing works but has roughly five-second-or-more latency, too slow for the intended adjacent-bedroom use. The route is parked pending a simpler/faster local solution.
 
 ## Security / Privacy
 
 - Roku and Govee controls remain on the home LAN.
 - No router port forwarding.
-- GitHub should not contain private medical, financial, password, or account information.
+- GitHub should not contain private medical, financial, password, account, or camera credential information.
+- Shared Drive source folders should not contain authentication secrets.
 - Camera experiments should remain purpose-limited and transparent to Mom.
 
-## Longer-Term Direction
+## Design Principles
 
-The Windows laptop is still a prototype host. A small always-on controller may eventually consolidate dashboard hosting, Roku control, printing, lighting, visual-inventory processing, shopping assistance, family updates, and other routines while keeping Mom's interface extremely simple.
+1. Prove the smallest useful behavior before automating maintenance.
+2. Prefer removing tasks from Mom over requiring new interfaces.
+3. **Structure the environment so AI has fewer things it needs to be intelligent about.**
+4. Human-confirmed ground truth overrides uncertain visual inference.
+5. Use cameras primarily for change/exception detection.
+6. Inventory status combines quantity and expected consumption, not package count alone.
+7. Mom-facing output can be comprehensive and readable; caregiver output should emphasize exceptions.
+8. Prefer simple local solutions when they solve the real problem more reliably than sophisticated cloud chains.
+9. Failed experiments reveal requirements.
+10. **Repeated diagnostic work should become an admin control or status indicator.**
+11. **Make dependencies observable.**
+12. **Automate the observation after the environment has been structured.**
 
-## September 19 Architecture Addendum
+## Near-Term Architecture Work
 
-### MOM — TODAY Inventory Integration
-
-MOM — TODAY Prototype 2 adds a full Mom-facing household inventory to the daily one-page print and planned dashboard view. The full list is intentional: Mom can use it as a daily reference before shopping rather than seeing only exceptions.
-
-Target architecture:
-
-```text
-household inventory state
-        |
-        +----> Mom Dashboard: full readable inventory
-        |
-        +----> MOM — TODAY 8:30 AM print: full readable inventory
-        |
-        +----> caregiver/admin: changes and exceptions only
-```
-
-Current refrigerator monitored set is Milk, Coke, and Pizza. Eggs and other refrigerator contents are explicitly ignored for this prototype.
-
-### Automated Blink Snapshot Acquisition
-
-The Acer now runs Python 3.13 with BlinkPy and can authenticate to Blink, enumerate cameras, request a fresh snapshot from **Mom’s Basement**, and save the raw JPEG locally.
-
-Prototype paths currently include:
-
-```text
-C:\Users\dan\OneDrive\Desktop\blink-test.py
-C:\Users\dan\OneDrive\Desktop\mom-inventory\basement-baseline.jpg
-C:\Users\dan\OneDrive\Desktop\mom-inventory\basement-latest.jpg
-C:\Users\dan\OneDrive\Desktop\mom-inventory\check-inventory.py
-```
-
-### Fixed-Zone Inventory Detection
-
-The first detector uses Pillow to crop a known shelf rectangle and compare the latest image against a human-confirmed baseline.
-
-```text
-Blink snapshot
-     |
-     v
-known fixed zone crop
-     |
-     v
-compare with baseline
-     |
-     v
-difference score
-     |
-     v
-inventory state
-```
-
-A controlled bleach-removal test returned a difference score of **10.57** and correctly classified **Bleach = OUT** using an initial threshold of 10.
-
-The threshold is experimental, not a confidence score. Before production use, collect multiple unchanged images to characterize normal Blink/IR/JPEG variation and calibrate each monitored zone. If normal variation overlaps product-removal changes, replace the simple pixel-difference method with a more robust visual comparison.
-
-The intended scalable implementation is one inventory configuration containing item names, camera/source, fixed-zone coordinates, baseline references, thresholds, and state rules. A single processor should iterate over that configuration rather than creating one script per item.
-
-### Updated End-to-End Target
-
-```text
-Blink camera
-    |
-    v
-Acer requests fresh snapshot
-    |
-    v
-fixed-zone inventory processor
-    |
-    v
-household inventory state
-    |
-    +----> MOM — TODAY print
-    +----> Mom Dashboard
-    +----> caregiver exceptions
-```
-
-### Bathroom Lighting Constraint Update
-
-Blink -> Alexa -> Govee works, but the observed roughly five-second-or-more latency is too slow for the bedroom-adjacent bathroom use case. Govee H6004 Auto Run can use ON status and time windows, but restoring power with the physical wall switch did not fire the ON-status automation; app-issued ON did. This route is therefore parked pending a simpler/faster local solution.
-
-### Architectural Principle Reinforced
-
-**Automate the observation after the environment has been structured.** Human-confirmed baselines and fixed physical zones make a simple, auditable detector possible. Only add more sophisticated vision if measured image variation shows that the simpler method is unreliable.
+- Collect detector calibration samples without unnecessary physical handling.
+- Put inventory result/state directly into the Admin Panel.
+- Add complete household inventory to Mom Dashboard screen.
+- Secure Blink authentication locally for unattended operation where Blink permits it.
+- Move toward one configuration-driven inventory processor for multiple items/zones.
+- Continue real-world soak testing before replacing proven components.
