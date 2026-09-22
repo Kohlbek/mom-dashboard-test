@@ -1,6 +1,6 @@
 # Mom Dashboard — Current Architecture
 
-_Last updated: September 21, 2026_
+_Last updated: September 22, 2026_
 
 ## Purpose
 
@@ -147,15 +147,39 @@ Roku ECP: port 8060.
 
 Entertainment-control sequences remain in the Mom-facing dashboard/bridge. The caregiver Roku Status section is status-only.
 
+## Local Device Registry
+
+A local `mom-devices.json` registry is being introduced as the authoritative map for LAN device names, addresses, types, and relevant ports. Scripts should progressively read this registry instead of embedding IP addresses independently.
+
+Current registry:
+- Acer / LEO Command Center — `192.168.0.241`
+- Living Room TV — `192.168.0.87:8060`
+- Mom's Bedroom TV — `192.168.0.210:8060`
+- Basement Govee — `192.168.0.18:4003`
+- Living Room Govee — `192.168.0.228:4003`
+- Living Room by the Stairs Govee — `192.168.0.154:4003`
+- Hallway Govee — `192.168.0.190:4003`
+- Mom's Phone — `192.168.0.115`
+- Chamberlain / MyQ-633 candidate — `192.168.0.3`
+- myQ front-of-door device — `192.168.0.172` (exact role still unidentified)
+
+The registry is configuration, not a Windows DNS/hosts replacement. It provides one project-level source of truth for device addressing.
+
 ## Govee Local Lighting
 
-Known H6004 bulbs:
-- `192.168.0.154`
-- `192.168.0.228`
+Four Govee LAN devices are now represented in the Admin Panel:
+- Basement — `192.168.0.18`
+- Living Room — `192.168.0.228`
+- Living Room by the Stairs — `192.168.0.154`
+- Hallway — `192.168.0.190`
 - UDP port 4003
-- LAN Control enabled independently
+- LAN Control enabled
 
-Local ON/OFF does not require Govee cloud API.
+Admin Govee Status uses a non-mutating local `devStatus` query and reports LAN reachability, power state, and brightness without changing the lights. September 22 test: all four devices reported ONLINE. Local ON/OFF does not require Govee cloud API.
+
+## Mom's Phone Presence
+
+Admin Panel phone presence monitors `192.168.0.115` and reports **DETECTED / NOT DETECTED**. The wording is intentionally conservative: a phone that does not answer a network check may be asleep, away, rebooting, or otherwise temporarily unreachable. DETECTED is useful evidence that the phone is still responding on the home network, not a location guarantee.
 
 ## MOM — TODAY Printing
 
@@ -329,4 +353,6 @@ Bathroom Blink/Alexa/Govee testing works but latency remains too slow for the in
 - Add remaining products using the model appropriate to each storage/use pattern.
 - Secure Blink authentication locally for unattended operation where Blink permits it.
 - Continue real-world soak testing before replacing proven components.
-- Consider Govee status in the Admin Panel if it proves operationally useful.
+- Move existing scripts progressively to the shared local `mom-devices.json` registry.
+- Investigate Chamberlain/myQ read-only door-state options before considering any physical door control.
+- Prototype basement Blink motion -> basement Govee lighting using the already proven motion-light pattern.
