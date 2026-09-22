@@ -1,6 +1,6 @@
 # Aging Parent Support / Mom Dashboard — Project Status
 
-_Last updated: September 21, 2026_
+_Last updated: September 22, 2026_
 
 ## Status: Prototype 3 Working — Unified Inventory + Caregiver Operations Layer Proven
 
@@ -176,6 +176,32 @@ The Admin Panel surfaces recent operational events from currently available syst
 
 This provides a compact caregiver view of what the system actually did and when.
 
+## September 22 — Device Status Expansion
+
+### Govee Status — PASS
+
+Admin Panel now performs local, non-mutating Govee LAN status queries for four lights:
+- Basement — `192.168.0.18`
+- Living Room — `192.168.0.228`
+- Living Room by the Stairs — `192.168.0.154`
+- Hallway — `192.168.0.190`
+
+All four reported ONLINE in the successful test, with power and brightness displayed.
+
+### Mom's Phone Presence — PASS
+
+Admin Panel now checks Mom's phone at `192.168.0.115` and reports **DETECTED / NOT DETECTED**. Initial test returned DETECTED.
+
+This is treated as a network-presence clue, not proof of physical location and not a safety alarm.
+
+### Local Device Registry — ADOPTED
+
+As LAN-connected components increase, device addressing should move into one local configuration file, `mom-devices.json`, rather than remain duplicated across scripts. The registry contains friendly names, IP addresses, device types, and relevant ports. It is intended to become the authoritative local device map.
+
+Known additional candidates:
+- Chamberlain / MyQ-633 — `192.168.0.3`
+- myQ front-of-door device — `192.168.0.172`; exact role still to be identified.
+
 ## Scripts / Source Workflow
 
 Google Drive **Mom Dashboard / Scripts** remains the shared source-review location. The Acer continues executing controlled local/OneDrive Desktop copies.
@@ -232,7 +258,9 @@ Bathroom Govee testing works but cloud/motion latency remains too slow for the i
 - Add remaining household items only after selecting an appropriate product-specific model.
 - Securely persist Blink authentication locally while preserving 2FA when Blink requires it.
 - Continue refrigerator fixed-zone work and normal-use observation.
-- Govee status remains a possible Admin Panel enhancement.
+- Move existing scripts progressively to the shared local `mom-devices.json` device registry.
+- Investigate Chamberlain/myQ read-only door-state integration.
+- Prototype basement Blink motion -> basement Govee light.
 - DNR / advance-care planning remains separate backlog work.
 
 ## Milestone Log
@@ -250,6 +278,8 @@ Bathroom Govee testing works but cloud/motion latency remains too slow for the i
 **September 20:** Admin Panel Prototype working. Print failure traced to moved script and resolved. Fresh-image path mismatch identified and corrected.
 
 **September 21:** MOM — TODAY Prototype 2 unattended production print PASS; bleach occupancy calibration; toothpaste multi-state dataset; trash-bag active/reserve model; generalized inventory engine; shared inventory state; one-button inventory refresh; Roku ECP status; Last Blink Image; and Recent Logs all integrated into caregiver Admin Panel v5.
+
+**September 22:** Govee Status for four LAN lights PASS; Mom's Phone Presence PASS; local device-registry architecture adopted; Chamberlain/myQ candidates identified for later read-only investigation.
 
 ## Current Interpretation
 
