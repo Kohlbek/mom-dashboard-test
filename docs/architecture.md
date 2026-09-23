@@ -1,55 +1,35 @@
 # LEO Household Support Platform — Architecture
 
-_Updated September 22, 2026. Public overview; private configuration and care details are maintained separately._
+_Updated September 23, 2026. Public overview; private setup instructions and care details are maintained separately._
 
 ## Purpose
 
-LEO explores practical support for an older adult and her caregivers. It aims to make routine tasks easier, preserve independence, and keep essential household operations understandable to a backup caregiver. Mom-facing controls remain simple; caregiver diagnostics and configuration remain separate.
+LEO explores simple household support for an older adult and practical diagnostics for caregivers. The person-facing interface and caregiver tools serve different needs.
 
-## Prototype topology
+## Prototype layout
 
-```text
-Mom-facing tablet and daily printed sheet
-             |
-             v
-    Local household controller
-       |       |         |
-       v       v         v
-    TV UI   printing   caregiver Admin
-                         |
-                    device health,
-                    camera images,
-                    inventory state
-```
+The current prototype uses a local controller for a simple dashboard, scheduled daily printing, and a caregiver Admin page. The public website demonstrates the interface; it is not the live route to household devices.
 
-The current controller is a Windows prototype host on the home network. The Mom-facing dashboard uses a local bridge for TV actions. A scheduled print produces the daily sheet. The caregiver Admin page shows status and runs explicit maintenance actions. The public website is a demonstration interface, not the live path to household devices.
+## Components
 
-## Working components
-
-- **Mom-facing dashboard:** large, direct controls for tested entertainment choices, weather, date, family updates, and lighting.
-- **MOM — TODAY:** a readable one-page morning print that has completed unattended scheduled production. Its displayed inventory still needs to read the shared state file.
-- **Caregiver Admin:** system checks, printing controls, inventory refresh, TV reachability, lighting status, phone network-presence clue, and read-only garage opener health. Presence and network reachability are observations, not safety or door-position guarantees.
-- **Visual inventory:** a camera request and configuration-driven processor produce shared inventory state. Item-specific sensing rules and human-confirmed baselines are used where appropriate; uncertain observations must remain uncertain.
-- **Camera Admin v1:** a separate local caregiver page lists Blink cameras, available metadata, saved images, cached-thumbnail sync, and targeted snapshot requests. A full sync and one targeted refresh were tested on the Windows host. Download time is not proof of capture time. The backend retains the previous image and reports an error if retrieval fails; that failure path has not yet been tested on the Windows host. Camera arm/disarm and privacy controls are not exposed.
-- **Garage opener health:** a read-only local diagnostic response supports connectivity and device-health reporting. It does not report physical door position. Camera-based OPEN / CLOSED / CAN'T TELL detection remains future work.
+- **Dashboard:** direct controls for tested entertainment and household actions.
+- **Daily sheet:** one-page scheduled print. Some displayed data still needs to consume shared state.
+- **Caregiver Admin:** system status, printing, inventory refresh, and read-only device health checks.
+- **Visual inventory:** a configured processor requests images and writes shared inventory state. Item-specific sensing rules and human confirmation remain necessary.
+- **Camera Admin:** a separate local caregiver page displays camera status and saved images. It supports cached-thumbnail sync, targeted snapshot requests, a health summary, favorites, an attention filter, and comparison of previous and current downloads. A new download does not establish a new capture. The backend preserves the last usable image after a retrieval failure; live host validation of that path is pending. Camera settings and arm/disarm are outside this page.
+- **Live View pilot:** a separate command-line experiment opened short moving video in a local player during one test. Results varied across attempts. It is not part of Camera Admin and is not a reliable caregiver feature yet.
+- **Device diagnostics:** read-only health observations do not necessarily establish physical state.
 
 ## Data and control boundaries
 
-The inventory processor should be the sole writer of the shared state file. Admin already reads it; the daily sheet and Mom-facing dashboard are pending consumers. Live device commands and authentication remain under control of the local host. Caregiver actions that could spend money, change care decisions, or notify people require human approval.
-
-Device addresses, identifiers, precise camera locations, private images, account details, medical information, and credentials are intentionally omitted from this public overview. The current Blink authentication file is configured under a potentially synced Desktop folder; moving it to protected, nonsynced storage is pending. Public source and documentation must not be treated as the live configuration or as a secret store.
-
-## Continuity requirement
-
-The platform must remain useful if the primary caregiver is unavailable. The planned **Normal → Emergency → Continuity** model will surface essential information, immediate and follow-up tasks, document locations, and a simplified backup-caregiver entry point. These modes are design work, not deployed emergency detection or automatic event handling.
+The inventory processor is intended to be the sole writer of shared inventory state. Additional displays and the daily sheet remain pending readers. Device commands and account authentication stay on the local host. Public source and documentation contain no live credentials or private device configuration.
 
 ## Design lessons
 
-1. Reduce steps for the person being supported before adding another interface.
-2. Structure physical storage and routines so observations are repeatable.
-3. Use different sensing models for different items and preserve human-confirmed ground truth.
-4. Distinguish network reachability, image download time, capture freshness, and real-world state.
-5. Keep diagnostic observation separate from device control.
-6. Record failed experiments and outliers; they reveal reliability requirements.
+1. Keep the person-facing controls simple.
+2. Preserve uncertainty in image interpretation and physical-state checks.
+3. Distinguish download time from camera capture freshness.
+4. Preserve a usable prior image and show errors when retrieval fails.
+5. Validate experimental video separately before presenting it as a dependable feature.
 
-See [project status](project-status.md) for tested milestones and remaining work. Detailed operational records are kept privately.
+See [project status](project-status.md) for tested milestones and remaining work.
