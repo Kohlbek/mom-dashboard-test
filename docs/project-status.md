@@ -1,39 +1,35 @@
 # LEO Household Support Platform — Project Status
 
-_Updated September 22, 2026. Public overview; private operational records contain the configuration and test detail._
+_Updated September 23, 2026. Public overview; private configuration and test logs are maintained separately._
 
 ## Tested milestones
 
 | Area | Status | Evidence and limit |
 |---|---|---|
-| Mom-facing TV dashboard | Working prototype | One-touch playback and local bridge have passed end-to-end tests. Reliability still depends on the host, network, and TV interface. |
-| Daily morning sheet | Unattended production pass | The expanded one-page sheet printed on schedule. Inventory values on the sheet still need to use shared state. |
-| Local lighting | Pass | Local status/control and a motion-triggered routine were demonstrated. |
-| Generalized visual inventory | Pass for tested items | A configuration-driven processor produces shared state from requested camera images. Product-specific models and human confirmation remain necessary. |
-| Caregiver Admin | Pass for tested controls | Printing, inventory refresh, TV reachability, lighting status, phone network-presence clue, and garage opener health were demonstrated. |
-| Camera Admin v1 | Windows host test pass | Camera cards, cached-image sync, and one targeted refresh worked. Download time does not verify camera capture time; retrieval-failure display still needs a live failure test. |
-| Garage opener health | Pass | Read-only diagnostics report system health. Door position is not available from that diagnostic response. |
+| Mom-facing dashboard | Working prototype | Core playback actions passed local end-to-end testing; availability depends on the host and connected devices. |
+| Daily sheet | Scheduled test pass | A one-page sheet printed on schedule. Some data integration remains pending. |
+| Local lighting | Tested | Status, control, and one triggered routine were demonstrated. |
+| Visual inventory | Tested for selected items | A configured processor produces shared state; uncertain observations require confirmation. |
+| Caregiver Admin | Tested controls | Status checks and explicit maintenance actions were demonstrated. |
+| Camera Admin | Production host test pass | Camera summary, cached-image sync, targeted refresh, favorites, attention filter, image comparison, and navigation feedback were exercised. Download time does not prove capture freshness. |
+| Device health | Read-only test pass | Diagnostics report health but do not establish physical state. |
 
-The Admin lighting-address display was corrected after a PowerShell variable-name collision. Camera Admin does not provide arm/disarm or privacy-setting controls; garage diagnostics do not provide door controls.
+A separate Live View command-line pilot displayed a short moving-video stream in a local player. Startup and duration varied across attempts. Live View is not integrated into Camera Admin.
 
 ## Current limits
 
-- The Windows computer remains a prototype controller. Restarts, network changes, and changes to the TV interface can affect availability.
-- Camera framing, lighting, occlusion, image compression, and item movement can affect inventory inference. Unknown results must not be presented as confirmed stock levels.
-- A newly downloaded Blink image is not necessarily a newly captured frame. Capture freshness is explicitly unverified unless stronger metadata is available.
-- The Blink authentication file is currently configured under a potentially synced Desktop path. Protected, nonsynced storage and renewal handling for two-factor authentication remain pending.
-- The complete Mom-facing inventory display and shared-state integration into the printed sheet remain unfinished.
+- Prototype availability still depends on the local host, network, and connected devices.
+- Camera framing and image quality can affect inventory inference; unknown results remain unknown.
+- A downloaded image can still be an older camera capture. Camera Admin shows download time and labels capture freshness as unverified.
+- Camera Admin retains a previously usable image on retrieval failure in backend tests; the failure display still needs a live host test.
+- Live View reliability needs more testing before UI integration.
+- Shared-state consumers and the complete Mom-facing inventory presentation remain unfinished.
 
-## Priority roadmap
+## Next work
 
-1. Build and validate camera-based garage door OPEN / CLOSED / CAN'T TELL detection after mounting and collecting reference views.
-2. Develop **Emergency Continuity & Caregiver Handoff**: immediate response, hospitalization and post-event checklists, progress tracking, document/contact locations, and a simple backup-caregiver starting point that works if the primary caregiver is unavailable. No automatic emergency trigger or mode switching has been deployed.
-3. Connect the daily print and Mom-facing dashboard to the shared inventory state; keep the generalized processor as its sole writer.
-4. Validate Camera Admin failure behavior and improve Blink authentication storage and renewal.
-5. Migrate scripts progressively to one private local device registry; improve item-specific inventory detection where it reduces useful work.
-6. Measure caregiver interventions, repeated problems, failures, and time saved. Explore human-reviewed bill/mail and shopping workflows, family/news data, and a simpler tablet interface.
-7. Investigate read-only portable-generator diagnostics when running and read-only OBD-II diagnostics for the family car. The car's factory Wi-Fi was found to be a subscription hotspot rather than a way to join the home network.
+1. Validate camera-based state detection after obtaining suitable reference views.
+2. Complete shared-state integration for the daily sheet and dashboard.
+3. Test Camera Admin failure behavior on the production host and improve stream reliability in the separate pilot.
+4. Improve operational resilience, caregiver handoff materials, and reliability measurement.
 
-Longer-term care, legal, appointment, transportation, and social-support experiments remain separate work. No private care or account details belong in this public repository.
-
-See [architecture](architecture.md) for the system overview.
+See [architecture](architecture.md) for the public system overview.
